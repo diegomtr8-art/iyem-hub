@@ -14,14 +14,13 @@ APP_URL=https://iyemyucatan.com
 ## Desplegar
 
 ```bash
-export IYEM_SSH_HOST="..."
-export IYEM_SSH_PORT="65002"
-export IYEM_SSH_USER="uXXXXXXXX"
-export IYEM_RUTA="/home/uXXXXXXXX/domains/iyemyucatan.com/public_html"
-
 npm run build          # los assets se compilan aquí, no en el servidor
 bash deploy/desplegar.sh
 ```
+
+El guion ya trae los datos de la cuenta del IYEM. Se autentica con la clave
+`~/.ssh/id_ed25519_iyemyucatan` y **nunca pide contraseña**: si la clave no
+está, se detiene antes de conectarse.
 
 El script se detiene ante cualquier error y deja el sitio en mantenimiento:
 es preferible una página de "volvemos pronto" a medio despliegue sirviéndose.

@@ -4,16 +4,15 @@
 # ============================================================================
 #
 #  Uso:
-#      export IYEM_SSH_HOST="..."      # IP del servidor
-#      export IYEM_SSH_PORT="65002"
-#      export IYEM_SSH_USER="uXXXXXXXX"
-#      export IYEM_RUTA="/home/uXXXXXXXX/domains/iyemyucatan.com/public_html"
 #      bash deploy/desplegar.sh
 #
-#  Las credenciales NO se escriben en este archivo. Se leen del entorno y la
-#  contraseña la pide `ssh` por su cuenta (o se usa una llave SSH, que es lo
-#  recomendable). Los scripts de este servidor que traen la contraseña en
-#  texto plano son un riesgo: cualquiera con acceso al repositorio la tiene.
+#  Los valores por omisión apuntan a la cuenta del IYEM en Hostinger; se
+#  pueden sobrescribir por entorno para desplegar a otro lado.
+#
+#  AUTENTICACIÓN: con la clave ~/.ssh/id_ed25519_iyemyucatan, nunca con
+#  contraseña. Aquí no hay ninguna escrita ni debe haberla: la de esta cuenta
+#  ya anda en texto plano en nueve archivos sueltos de htdocs, y ese patrón
+#  no se replica. Sin la clave, el script se detiene antes de conectarse.
 #
 #  Qué hace, en orden:
 #      1. Respalda la base de datos            ← lo más importante
@@ -32,17 +31,25 @@
 
 set -euo pipefail
 
-: "${IYEM_SSH_HOST:?Falta IYEM_SSH_HOST}"
+: "${IYEM_SSH_HOST:=195.35.38.222}"
 : "${IYEM_SSH_PORT:=65002}"
-: "${IYEM_SSH_USER:?Falta IYEM_SSH_USER}"
-: "${IYEM_RUTA:?Falta IYEM_RUTA (ruta de public_html en el servidor)}"
+: "${IYEM_SSH_USER:=u489236361}"
+: "${IYEM_SSH_KEY:=$HOME/.ssh/id_ed25519_iyemyucatan}"
+: "${IYEM_RUTA:=/home/u489236361/domains/iyemyucatan.com/public_html}"
+
+if [ ! -f "$IYEM_SSH_KEY" ]; then
+    echo "x No existe la clave $IYEM_SSH_KEY."
+    echo "  El despliegue se autentica con clave, no con contrasena."
+    exit 1
+fi
 
 LOCAL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FECHA="$(date +%Y%m%d-%H%M%S)"
 
+SSH_OPTS=(-i "$IYEM_SSH_KEY" -p "$IYEM_SSH_PORT" -o StrictHostKeyChecking=accept-new -o BatchMode=yes)
+
 remoto() {
-    ssh -p "$IYEM_SSH_PORT" -o StrictHostKeyChecking=accept-new \
-        "$IYEM_SSH_USER@$IYEM_SSH_HOST" "cd $IYEM_RUTA && $*"
+    ssh "${SSH_OPTS[@]}" "$IYEM_SSH_USER@$IYEM_SSH_HOST" "cd $IYEM_RUTA && $*"
 }
 
 titulo() {
@@ -78,14 +85,12 @@ echo "  Commit: $(git -C "$LOCAL" rev-parse --short HEAD) — $(git -C "$LOCAL" 
 titulo "1/8  Respaldando la base de datos"
 echo "Este paso es el que permite volver atrás. Si falla, el despliegue se detiene."
 
-remoto "php -r '
-    \$env = parse_ini_file(\".env\");
-    printf(\"%s|%s|%s\", \$env[\"DB_DATABASE\"], \$env[\"DB_USERNAME\"], \$env[\"DB_PASSWORD\"]);
-' > /tmp/iyem_db.txt"
-
-remoto "IFS='|' read -r DB U P < /tmp/iyem_db.txt && \
-    mysqldump --single-transaction --quick -u \"\$U\" -p\"\$P\" \"\$DB\" \
-    | gzip > ~/respaldo-iyem-$FECHA.sql.gz && rm -f /tmp/iyem_db.txt"
+# Las credenciales de la base se leen del .env del propio servidor y nunca
+# salen de el: el volcado se arma y se comprime alla.
+remoto "set -a && . ./.env && set +a && \
+    mysqldump --single-transaction --quick --no-tablespaces \
+    -u \"\$DB_USERNAME\" -p\"\$DB_PASSWORD\" \"\$DB_DATABASE\" \
+    | gzip > ~/respaldo-iyem-$FECHA.sql.gz"
 
 remoto "ls -lh ~/respaldo-iyem-$FECHA.sql.gz"
 echo "✓ Respaldo en ~/respaldo-iyem-$FECHA.sql.gz"
@@ -97,7 +102,7 @@ remoto "php artisan down --retry=60 --render='errors::503' || true"
 # ── 3. Código ───────────────────────────────────────────────────────────────
 titulo "3/8  Subiendo el código"
 rsync -avz --delete \
-    -e "ssh -p $IYEM_SSH_PORT -o StrictHostKeyChecking=accept-new" \
+    -e "ssh -i $IYEM_SSH_KEY -p $IYEM_SSH_PORT -o StrictHostKeyChecking=accept-new -o BatchMode=yes" \
     --exclude '.git' \
     --exclude '.env' \
     --exclude 'node_modules' \
@@ -152,7 +157,7 @@ done
 
 echo ""
 echo "Listo. Si algo salió mal:"
-echo "  ssh -p $IYEM_SSH_PORT $IYEM_SSH_USER@$IYEM_SSH_HOST"
+echo "  ssh -i $IYEM_SSH_KEY -p $IYEM_SSH_PORT $IYEM_SSH_USER@$IYEM_SSH_HOST"
 echo "  cd $IYEM_RUTA && php artisan down"
 echo "  zcat ~/respaldo-iyem-$FECHA.sql.gz | mysql -u USUARIO -p BASE"
 echo "  git checkout v0.1.0  # o el commit anterior"
