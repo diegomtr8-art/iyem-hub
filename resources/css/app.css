@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] {
+    display: none;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar discreto, con acento guinda, para paneles internos (sidebar, tablas). */
+.scrollbar-fina {
+    scrollbar-width: thin;
+    scrollbar-color: #C0728A transparent;
+}
+.scrollbar-fina::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.scrollbar-fina::-webkit-scrollbar-thumb {
+    background-color: #C0728A;
+    border-radius: 9999px;
+}
+.scrollbar-fina::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Patrón de puntos sutil para fondos "tech" (login, encabezados). */
+.patron-puntos {
+    background-image: radial-gradient(currentColor 1px, transparent 1px);
+    background-size: 22px 22px;
+}
