@@ -26,6 +26,16 @@ class FusionadorPersonas
     public const DIAS_PARA_REVERTIR = 30;
 
     /**
+     * Campos con restricción UNIQUE en `personas`.
+     *
+     * No se pueden copiar a la principal mientras la duplicada los siga
+     * ocupando: la baja lógica no libera el índice único, así que el UPDATE
+     * choca contra la restricción. Se vacían en la duplicada antes de
+     * transferirlos, y al revertir se le devuelven desde el snapshot.
+     */
+    private const CAMPOS_UNICOS = ['curp', 'email'];
+
+    /**
      * Tablas de módulo cuyos registros cambian de dueño en la fusión.
      */
     private const TABLAS_DE_MODULO = [
@@ -149,16 +159,23 @@ class FusionadorPersonas
                 ]);
             }
 
-            // Los campos que se completaron con datos de la duplicada se
-            // vuelven a vaciar: eran de ella, no de la principal.
-            if ($fusion->campos_completados) {
-                $principal->forceFill(
-                    array_fill_keys(array_keys($fusion->campos_completados), null)
-                )->save();
+            /*
+             * Los campos que se completaron con datos de la duplicada se
+             * vuelven a vaciar: eran de ella, no de la principal.
+             *
+             * El orden importa. Primero se liberan en la principal y solo
+             * después se le devuelven a la duplicada; al revés, los campos
+             * con índice único chocarían contra la restricción.
+             */
+            $completados = $fusion->campos_completados ?? [];
+
+            if ($completados !== []) {
+                $principal->forceFill(array_fill_keys(array_keys($completados), null))->save();
             }
 
-            // El estado que tenía la duplicada antes de la fusión.
             $duplicada->forceFill([
+                ...$completados,
+                // El estado que tenía la duplicada antes de la fusión.
                 'estado_persona' => $fusion->snapshot_duplicada['estado_persona'] ?? 'activa',
             ])->save();
 
@@ -211,6 +228,14 @@ class FusionadorPersonas
 
         if ($completados === []) {
             return [];
+        }
+
+        // Primero se liberan en la duplicada los campos con índice único;
+        // si no, el UPDATE de la principal choca contra la restricción.
+        $aLiberar = array_intersect(array_keys($completados), self::CAMPOS_UNICOS);
+
+        if ($aLiberar !== []) {
+            $duplicada->forceFill(array_fill_keys($aLiberar, null))->saveQuietly();
         }
 
         $principal->forceFill($completados)->save();

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\EventoController;
 use App\Http\Controllers\Api\V1\PersonaController;
 use App\Http\Controllers\Api\V1\SaludController;
+use App\Http\Controllers\Api\V1\SsoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::middleware('abilities:eventos:escribir')
             ->post('/eventos', [EventoController::class, 'store'])
             ->name('eventos.store');
+
+        /*
+         * Inicio de sesión único (fase 1: el hub emite, el módulo canjea).
+         * Ningún módulo satélite lo consume todavía. Ver docs/SSO.md.
+         */
+        Route::middleware('abilities:sso:validar')
+            ->post('/sso/validar', [SsoController::class, 'validar'])
+            ->name('sso.validar');
     });
 });
 

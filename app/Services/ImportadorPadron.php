@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\PadronImportacion;
-use App\Models\Persona;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -12,7 +11,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
-use Maatwebsite\Excel\HeadingRowImport;
 
 /**
  * Importación de personas desde CSV o XLSX.
@@ -255,12 +253,26 @@ class ImportadorPadron
         return $mapeo;
     }
 
-    /** @return array<int, string> */
+    /**
+     * Encabezados tal como vienen en el archivo.
+     *
+     * Se leen de la primera fila de la hoja y no con `HeadingRowImport`,
+     * que los normaliza a snake_case en minúsculas: "Teléfono" se volvía
+     * "telefono" y dejaba de coincidir con la clave que usa `leerFilas`
+     * para armar cada renglón, así que el mapeo apuntaba a columnas
+     * inexistentes y todas las filas se rechazaban por "falta el nombre".
+     *
+     * Como efecto secundario, la pantalla muestra los nombres reales de
+     * las columnas, que es lo que quien captura reconoce.
+     *
+     * @return array<int, string>
+     */
     private function leerEncabezados(string $ruta): array
     {
-        $encabezados = (new HeadingRowImport)->toArray(Storage::path($ruta));
+        $hojas = Excel::toArray(new class {}, Storage::path($ruta));
+        $primeraFila = collect($hojas[0] ?? [])->first() ?? [];
 
-        return collect($encabezados[0][0] ?? [])
+        return collect($primeraFila)
             ->filter(fn ($valor) => filled($valor))
             ->map(fn ($valor) => (string) $valor)
             ->values()

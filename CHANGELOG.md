@@ -92,6 +92,17 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 - `ConsultasTest`: 16 pruebas que cubren las seis consultas, los tres
   operadores del cruce, la exportación y los permisos.
 - Dependencias `chart.js` y `maatwebsite/excel`.
+- Detección de duplicados por CURP, RFC, correo, teléfono y similitud de
+  nombre, con comando `php artisan padron:duplicados`.
+- Pantalla `/padron/duplicados` para que un Super Admin fusione, con
+  reversión durante 30 días respaldada por `personas_fusiones`.
+- Importación de CSV/XLSX en dos pasos: vista previa con mapeo de columnas
+  y validación fila por fila, y confirmación. Los lotes quedan en
+  `padron_importaciones` con archivo de rechazos descargable.
+- Exportación del padrón a XLSX y CSV respetando los filtros aplicados.
+- `SsoService` y `POST /api/v1/sso/validar`: tickets de un solo uso con 60
+  segundos de vida. Fase 1; ningún módulo satélite lo consume todavía.
+- `DuplicadosTest` (15 pruebas) e `ImportacionPadronTest` (14 pruebas).
 
 ### Cambiado
 

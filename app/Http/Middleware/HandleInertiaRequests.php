@@ -63,6 +63,10 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('flash.success'),
                 'error' => $request->session()->get('flash.error'),
             ],
+
+            // Vista previa de una importación. Viaja por la sesión porque el
+            // archivo se sube con una petición y se confirma con otra.
+            'vistaPrevia' => fn () => $request->session()->get('vistaPrevia'),
         ];
     }
 }

@@ -6,6 +6,8 @@ use App\Http\Controllers\BuscadorController;
 use App\Http\Controllers\ConsultasController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PadronController;
+use App\Http\Controllers\PadronDuplicadosController;
+use App\Http\Controllers\PadronImportacionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -47,6 +49,33 @@ Route::middleware([
             Route::get('/crear', [PadronController::class, 'create'])->name('create');
             Route::post('/', [PadronController::class, 'store'])->name('store');
         });
+
+        // Importación y exportación. Van antes de `/{persona}` para que
+        // "importar" y "duplicados" no se lean como identificadores.
+        Route::middleware('permission:exportar-padron')
+            ->get('/exportar', [PadronImportacionController::class, 'exportar'])
+            ->name('exportar');
+
+        Route::middleware('permission:importar-padron')->prefix('importar')->name('importar.')->group(function () {
+            Route::get('/', [PadronImportacionController::class, 'index'])->name('index');
+            Route::post('/previsualizar', [PadronImportacionController::class, 'previsualizar'])->name('previsualizar');
+            Route::post('/{importacion}/confirmar', [PadronImportacionController::class, 'confirmar'])->name('confirmar');
+            Route::get('/{importacion}/rechazos', [PadronImportacionController::class, 'rechazos'])->name('rechazos');
+        });
+
+        /*
+         * Duplicados y fusión: solo Super Admin.
+         *
+         * Fusionar junta bajo una identidad los trámites de módulos
+         * distintos. No es una operación que deba poder hacer cualquiera con
+         * permiso de edición.
+         */
+        Route::middleware(['role:Super Admin', 'permission:fusionar-padron'])
+            ->prefix('duplicados')->name('duplicados.')->group(function () {
+                Route::get('/', [PadronDuplicadosController::class, 'index'])->name('index');
+                Route::post('/fusionar', [PadronDuplicadosController::class, 'fusionar'])->name('fusionar');
+                Route::post('/{fusion}/revertir', [PadronDuplicadosController::class, 'revertir'])->name('revertir');
+            });
 
         Route::middleware('permission:ver-padron')->group(function () {
             Route::get('/{persona}', [PadronController::class, 'show'])->name('show');
