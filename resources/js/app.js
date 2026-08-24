@@ -18,6 +18,8 @@ createInertiaApp({
             .mount(el);
     },
     progress: {
-        color: '#4B5563',
+        // Guinda institucional. La barra de progreso venía en el gris por
+        // omisión de Jetstream, ajeno a la identidad del instituto.
+        color: '#9F2241',
     },
 });

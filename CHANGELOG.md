@@ -32,6 +32,20 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 - Cinco permisos de acción sobre el padrón: crear, editar, exportar,
   importar y fusionar.
 - Iconos nuevos en `IconoModulo` e `IconoNav`, ambos con `aria-label`.
+- Dashboard rediseñado: hero con saludo contextual y cuatro KPIs, cuadrícula
+  filtrable por categoría, vista de tarjetas o lista persistida en
+  `localStorage`, y bitácora de accesos con pestaña de plataforma para el
+  Super Admin.
+- Servicio `SaludModulos`: sondeo en paralelo del endpoint de salud de cada
+  módulo, con caché de 5 minutos, expuesto en `GET /dashboard/salud`.
+- Servicio `IndicadoresHub` con los KPIs globales y el mini-dato por módulo.
+- Componentes `TarjetaModulo`, `TarjetaKpi`, `BadgeEstado` y `PuntoSalud`.
+- `DashboardTest`: cinco pruebas de permisos por rol y de bitácora.
+
+### Cambiado
+
+- La barra de progreso de Inertia pasa del gris de Jetstream al guinda
+  institucional.
 
 ## [0.1.0] - 2026-08-24
 

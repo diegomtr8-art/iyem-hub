@@ -4,27 +4,58 @@ namespace App\Http\Controllers;
 
 use App\Models\Acceso;
 use App\Services\CatalogoModulos;
+use App\Services\IndicadoresHub;
+use App\Services\SaludModulos;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as RespuestaHttp;
 
 class DashboardController extends Controller
 {
-    public function __construct(private readonly CatalogoModulos $catalogo) {}
+    public function __construct(
+        private readonly CatalogoModulos $catalogo,
+        private readonly IndicadoresHub $indicadores,
+        private readonly SaludModulos $salud,
+    ) {}
 
     public function index(Request $request): Response
     {
         $usuario = $request->user();
+        $datosPorModulo = $this->indicadores->porModulo();
+
+        $modulos = $this->catalogo->paraUsuario($usuario)
+            ->map(fn (array $modulo) => [
+                ...$modulo,
+                'dato' => $datosPorModulo[$modulo['slug']] ?? null,
+            ]);
 
         return Inertia::render('Dashboard', [
-            'modulos' => $this->catalogo->paraUsuario($usuario),
+            'modulos' => $modulos,
             'categorias' => $this->catalogo->categorias($usuario),
-            'actividades' => Acceso::query()
-                ->where('user_id', $usuario->id)
-                ->latest('accedido_at')
-                ->limit(10)
-                ->get(['modulo', 'ip_address', 'accedido_at']),
+            'indicadores' => $this->indicadores->globales($usuario),
+            'actividades' => $this->actividadesDe($usuario->id),
+            // La bitácora completa solo la ve quien administra la plataforma.
+            'actividadesPlataforma' => $usuario->esSuperAdmin()
+                ? $this->actividadesDePlataforma()
+                : null,
+        ]);
+    }
+
+    /**
+     * Semáforo de los módulos.
+     *
+     * Endpoint aparte, consultado desde el navegador ya que la página está
+     * pintada: sondear diez subdominios durante el render dejaría el
+     * dashboard en blanco cada vez que uno de ellos no contestara.
+     */
+    public function salud(Request $request): JsonResponse
+    {
+        return response()->json([
+            'salud' => $this->salud->estado(),
+            'vigencia_minutos' => SaludModulos::MINUTOS_DE_CACHE,
         ]);
     }
 
@@ -50,5 +81,30 @@ class DashboardController extends Controller
         }
 
         return redirect($modulo['url_destino']);
+    }
+
+    private function actividadesDe(int $usuarioId): Collection
+    {
+        return Acceso::query()
+            ->where('user_id', $usuarioId)
+            ->latest('accedido_at')
+            ->limit(10)
+            ->get(['id', 'modulo', 'ip_address', 'accedido_at']);
+    }
+
+    private function actividadesDePlataforma(): Collection
+    {
+        return Acceso::query()
+            ->with('user:id,name,apellido')
+            ->latest('accedido_at')
+            ->limit(30)
+            ->get(['id', 'user_id', 'modulo', 'ip_address', 'accedido_at'])
+            ->map(fn (Acceso $acceso) => [
+                'id' => $acceso->id,
+                'modulo' => $acceso->modulo,
+                'ip_address' => $acceso->ip_address,
+                'accedido_at' => $acceso->accedido_at,
+                'usuario' => trim("{$acceso->user?->name} {$acceso->user?->apellido}") ?: 'Usuario eliminado',
+            ]);
     }
 }

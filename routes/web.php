@@ -16,6 +16,7 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/salud', [DashboardController::class, 'salud'])->name('dashboard.salud');
     Route::get('/dashboard/modulos/{slug}', [DashboardController::class, 'acceder'])->name('dashboard.acceder');
 
     Route::redirect('/perfil', '/user/profile')->name('perfil');
