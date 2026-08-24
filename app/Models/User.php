@@ -35,6 +35,7 @@ class User extends Authenticatable
         'email',
         'password',
         'estado',
+        'expira_at',
     ];
 
     /**
@@ -59,6 +60,7 @@ class User extends Authenticatable
         'nombre_completo',
         'rol_actual',
         'es_super_admin',
+        'es_tester',
     ];
 
     /**
@@ -73,6 +75,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'estado' => 'boolean',
             'last_login' => 'datetime',
+            'expira_at' => 'datetime',
         ];
     }
 
@@ -94,5 +97,24 @@ class User extends Authenticatable
     public function getEsSuperAdminAttribute(): bool
     {
         return $this->esSuperAdmin();
+    }
+
+    public function esTester(): bool
+    {
+        return $this->hasRole('Tester');
+    }
+
+    public function getEsTesterAttribute(): bool
+    {
+        return $this->esTester();
+    }
+
+    /**
+     * Una cuenta sin `expira_at` no caduca. Con fecha, deja de ser válida
+     * en cuanto esa fecha queda atrás.
+     */
+    public function vigente(): bool
+    {
+        return $this->expira_at === null || $this->expira_at->isFuture();
     }
 }

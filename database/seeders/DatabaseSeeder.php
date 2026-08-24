@@ -15,6 +15,10 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             UserSeeder::class,
             PersonaSeeder::class,
+            // El orden importa: TesterSeeder necesita que el rol Tester ya
+            // exista, y el padrón de demostración es lo único que ese rol ve.
+            TesterSeeder::class,
+            PadronDemoSeeder::class,
         ]);
     }
 }

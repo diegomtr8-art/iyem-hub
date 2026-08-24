@@ -7,6 +7,32 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Agregado
+
+- Catálogo de 13 módulos en `config/modulos.php` con estado, categoría,
+  responsable, endpoint de salud, color y orden.
+- Servicio `CatalogoModulos`: fuente única de interpretación del catálogo
+  para el dashboard, el sidebar y la API.
+- Paleta extendida: `iyem.dorado` para KPIs y gráficas, más los semánticos
+  `iyem.exito`, `iyem.alerta` e `iyem.error`.
+- Rol `Tester` de solo lectura, con `TesterSeeder` y una cuenta que caduca
+  a los 90 días.
+- `PadronDemoSeeder`: 200 personas ficticias con apellidos yucatecos, CURP
+  sintética de entidad inexistente (`ZZ`) y registros en los seis módulos,
+  sesgados para reproducir el embudo del emprendedor.
+- Columna `users.expira_at` y middleware `VerificaVigencia`, que cierra la
+  sesión de las cuentas caducadas.
+- Columna `personas.demo` y scope global de aislamiento: una sesión de
+  Tester solo alcanza personas de demostración, en la web y en la API.
+- Enmascarado de campos sensibles en el modelo `Persona` mediante accessors,
+  de modo que también protege `toArray()`, la API y las exportaciones.
+- Middleware `RestringeTester`, que le cierra `/user/api-tokens` al rol de
+  pruebas.
+- Banner permanente de modo de pruebas en `AppLayout`.
+- Cinco permisos de acción sobre el padrón: crear, editar, exportar,
+  importar y fusionar.
+- Iconos nuevos en `IconoModulo` e `IconoNav`, ambos con `aria-label`.
+
 ## [0.1.0] - 2026-08-24
 
 Primera versión con control de versiones. Marca el punto de partida del

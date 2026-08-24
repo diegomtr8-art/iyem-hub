@@ -46,6 +46,7 @@ class RolePermissionSeeder extends Seeder
             'Admin Área' => 'Administra los módulos de su área asignada.',
             'Supervisor' => 'Supervisa la operación y consulta reportes de sus módulos.',
             'Operario' => 'Acceso operativo a un módulo específico.',
+            'Tester' => 'Acceso de solo lectura a datos ficticios. Para pruebas de servicio social.',
         ];
 
         foreach ($roles as $nombre => $descripcion) {
@@ -72,6 +73,19 @@ class RolePermissionSeeder extends Seeder
         Role::findByName('Operario')->syncPermissions([
             'ver-crea', 'ver-padron',
         ]);
+
+        /*
+         * Tester ve todos los módulos —esa es la gracia: sirve para recorrer
+         * la plataforma completa— pero no escribe nada, no exporta y no entra
+         * al panel de administración. Los campos sensibles le llegan
+         * enmascarados desde el modelo `Persona`, y el scope global de
+         * aislamiento lo deja únicamente con las personas de demostración.
+         */
+        Role::findByName('Tester')->syncPermissions(
+            collect(array_keys(config('modulos')))
+                ->map(fn (string $slug) => "ver-{$slug}")
+                ->all()
+        );
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

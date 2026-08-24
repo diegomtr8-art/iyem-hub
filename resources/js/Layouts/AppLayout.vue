@@ -166,6 +166,23 @@ const iniciales = () => {
                 </Dropdown>
             </header>
 
+            <!--
+                Aviso permanente del modo de pruebas. No se puede cerrar: la
+                idea es que quien demuestra la plataforma nunca confunda un
+                dato ficticio con uno real.
+            -->
+            <div
+                v-if="user().es_tester"
+                role="status"
+                class="flex items-start gap-3 border-b border-iyem-dorado/40 bg-iyem-dorado/10 px-4 py-3 text-sm text-iyem-800 sm:px-6"
+            >
+                <IconoNav icono="alerta" class="mt-0.5 h-5 w-5 shrink-0 text-iyem-alerta" />
+                <p>
+                    <span class="font-semibold">Estás en modo de pruebas.</span>
+                    Los datos que ves son de demostración y algunos campos están enmascarados.
+                </p>
+            </div>
+
             <main class="p-4 sm:p-6 lg:p-8">
                 <slot />
             </main>
