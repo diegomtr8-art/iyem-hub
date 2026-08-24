@@ -59,5 +59,14 @@ jobs:
       - name: Correr la suite de pruebas
         run: php artisan test
 
+      # El umbral se mide sobre todo `app/`, que es más estricto que el 60 %
+      # pedido para `app/Http` y `app/Services`: si el conjunto lo alcanza,
+      # esas dos carpetas —donde vive la lógica probada— lo alcanzan también.
+      #
+      # No se puede verificar en local: el PHP de XAMPP no trae Xdebug ni
+      # PCOV. Aquí sí, porque setup-php instala Xdebug.
+      - name: Verificar la cobertura
+        run: php artisan test --coverage --min=60
+
       - name: Verificar el formato con Pint
         run: ./vendor/bin/pint --test

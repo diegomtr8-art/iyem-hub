@@ -103,6 +103,17 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 - `SsoService` y `POST /api/v1/sso/validar`: tickets de un solo uso con 60
   segundos de vida. Fase 1; ningún módulo satélite lo consume todavía.
 - `DuplicadosTest` (15 pruebas) e `ImportacionPadronTest` (14 pruebas).
+- `PadronTest` (18 pruebas) y `SeguridadTest` (6 pruebas).
+- Middleware `CabecerasDeSeguridad`: X-Frame-Options, X-Content-Type-Options,
+  Referrer-Policy, Permissions-Policy y HSTS solo bajo HTTPS.
+- Paso de cobertura en CI con umbral de 60 %.
+- `docs/ARQUITECTURA.md` y `docs/SSO.md`.
+
+### Cambiado (seguridad)
+
+- Política de contraseñas: mínimo 10 caracteres con mayúscula, minúscula y
+  número, en vez del mínimo de 8 de Laravel.
+- `.env.example` sale con `APP_DEBUG=false`.
 
 ### Cambiado
 

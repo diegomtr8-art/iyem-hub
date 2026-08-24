@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CabecerasDeSeguridad;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RestringeTester;
 use App\Http\Middleware\VerificaVigencia;
@@ -22,10 +23,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            CabecerasDeSeguridad::class,
             VerificaVigencia::class,
             RestringeTester::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+        ]);
+
+        $middleware->api(prepend: [
+            CabecerasDeSeguridad::class,
         ]);
 
         $middleware->alias([
