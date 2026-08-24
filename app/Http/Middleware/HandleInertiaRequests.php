@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\CatalogoModulos;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,20 +36,12 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $user = $request->user();
+        $usuario = $request->user();
+        $catalogo = app(CatalogoModulos::class);
 
         return [
             ...parent::share($request),
-            'modulosSidebar' => fn () => $user
-                ? collect(config('modulos'))
-                    ->filter(fn ($modulo, $slug) => $user->can("ver-{$slug}"))
-                    ->map(fn ($modulo, $slug) => [
-                        'slug' => $slug,
-                        'nombre' => $modulo['nombre'],
-                        'url' => $modulo['externo'] ? route('dashboard.acceder', $slug) : $modulo['url'],
-                    ])
-                    ->values()
-                : [],
+            'modulosSidebar' => fn () => $catalogo->paraSidebar($usuario),
         ];
     }
 }

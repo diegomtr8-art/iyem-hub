@@ -38,6 +38,13 @@ export default {
                     secundario: '#9F2241',
                     claro: '#F5EAEE',
                     neutro: '#F4F4F6',
+                    // Acento gubernamental. Uso restringido: KPIs, badges y
+                    // series de graficas. Nunca como color de superficie.
+                    dorado: '#BC955C',
+                    // Colores semanticos de estado.
+                    exito: '#1F7A5C',
+                    alerta: '#B45309',
+                    error: '#9B1C1C',
                 },
                 // Escala oscura (con matiz guinda) para el sidebar y superficies "tech".
                 tinta: {

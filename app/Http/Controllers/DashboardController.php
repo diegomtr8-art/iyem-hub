@@ -3,39 +3,40 @@
 namespace App\Http\Controllers;
 
 use App\Models\Acceso;
+use App\Services\CatalogoModulos;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as RespuestaHttp;
 
 class DashboardController extends Controller
 {
+    public function __construct(private readonly CatalogoModulos $catalogo) {}
+
     public function index(Request $request): Response
     {
-        $user = $request->user();
-
-        $modulos = collect(config('modulos'))
-            ->filter(fn ($modulo, $slug) => $user->can("ver-{$slug}"))
-            ->map(fn ($modulo, $slug) => [...$modulo, 'slug' => $slug])
-            ->values();
-
-        $actividades = Acceso::query()
-            ->where('user_id', $user->id)
-            ->latest('accedido_at')
-            ->limit(5)
-            ->get(['modulo', 'accedido_at']);
+        $usuario = $request->user();
 
         return Inertia::render('Dashboard', [
-            'modulos' => $modulos,
-            'actividades' => $actividades,
+            'modulos' => $this->catalogo->paraUsuario($usuario),
+            'categorias' => $this->catalogo->categorias($usuario),
+            'actividades' => Acceso::query()
+                ->where('user_id', $usuario->id)
+                ->latest('accedido_at')
+                ->limit(10)
+                ->get(['modulo', 'ip_address', 'accedido_at']),
         ]);
     }
 
-    public function acceder(Request $request, string $slug)
+    public function acceder(Request $request, string $slug): RespuestaHttp
     {
-        $modulo = config("modulos.{$slug}");
+        $modulo = $this->catalogo->encontrar($slug);
 
         abort_unless($modulo, 404);
         abort_unless($request->user()->can("ver-{$slug}"), 403);
+
+        // Un módulo en desarrollo o planeado no tiene a dónde mandar al usuario.
+        abort_unless($modulo['navegable'], 404, 'Ese módulo todavía no está disponible.');
 
         Acceso::create([
             'user_id' => $request->user()->id,
@@ -45,9 +46,9 @@ class DashboardController extends Controller
         ]);
 
         if ($modulo['externo']) {
-            return Inertia::location($modulo['url']);
+            return Inertia::location($modulo['url_destino']);
         }
 
-        return redirect($modulo['url']);
+        return redirect($modulo['url_destino']);
     }
 }
