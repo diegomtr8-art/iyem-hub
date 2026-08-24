@@ -7,6 +7,8 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.2.0] - 2026-08-24
+
 ### Agregado
 
 - Catálogo de 13 módulos en `config/modulos.php` con estado, categoría,
@@ -158,5 +160,6 @@ Lo que ya existía antes de esta versión y sobre lo que se construye:
 - Dashboard con cuadrícula de módulos y registro de accesos.
 - Padrón con listado, alta y mapa.
 
-[Sin publicar]: https://github.com/iyem/iyem-hub/compare/v0.1.0...HEAD
+[Sin publicar]: https://github.com/iyem/iyem-hub/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/iyem/iyem-hub/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/iyem/iyem-hub/releases/tag/v0.1.0
