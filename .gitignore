@@ -1,24 +1,37 @@
-*.log
-.DS_Store
-.env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
+# Dependencias
+/vendor
 /node_modules
+
+# Compilados
 /public/build
 /public/hot
 /public/storage
+
+# Entorno y llaves
+.env
+.env.*
+!.env.example
 /storage/*.key
 /storage/pail
-/vendor
+/auth.json
+
+# Caches de herramientas
+.phpunit.result.cache
+/.phpunit.cache
+/.phpactor.json
+
+# Editores
+/.idea
+/.vscode
+/.fleet
+/.nova
+/.zed
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Vagrant / Homestead
 Homestead.json
 Homestead.yaml
-Thumbs.db
