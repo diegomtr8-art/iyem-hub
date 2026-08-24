@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\BuscadorController;
+use App\Http\Controllers\ConsultasController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PadronController;
 use Illuminate\Support\Facades\Route;
@@ -56,6 +57,22 @@ Route::middleware([
             Route::post('/{persona}/etiquetas', [PadronController::class, 'agregarEtiqueta'])->name('etiquetas.store');
             Route::delete('/{persona}/etiquetas/{etiqueta}', [PadronController::class, 'quitarEtiqueta'])->name('etiquetas.destroy');
         });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Consultas 360°
+    |--------------------------------------------------------------------------
+    |
+    | Los filtros viajan en la query string a propósito: así cualquier
+    | resultado se comparte copiando la URL.
+    |
+    */
+    Route::prefix('consultas')->name('consultas.')->middleware('permission:ver-consultas')->group(function () {
+        Route::get('/', [ConsultasController::class, 'index'])->name('index');
+        Route::get('/{clave}/exportar', [ConsultasController::class, 'exportar'])
+            ->middleware('permission:exportar-padron')
+            ->name('exportar');
     });
 
     Route::middleware('role:Super Admin')->prefix('admin')->name('admin.')->group(function () {

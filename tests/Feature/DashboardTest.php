@@ -62,8 +62,17 @@ class DashboardTest extends TestCase
 
     public function test_un_modulo_en_desarrollo_no_se_puede_abrir(): void
     {
+        // `bitacora` sigue en desarrollo: se muestra en el dashboard con su
+        // badge, pero no lleva a ninguna parte.
         $this->actingAs($this->usuarioCon('Super Admin'))
-            ->get(route('dashboard.acceder', 'consultas'))
+            ->get(route('dashboard.acceder', 'bitacora'))
+            ->assertNotFound();
+    }
+
+    public function test_un_modulo_planeado_tampoco_se_puede_abrir(): void
+    {
+        $this->actingAs($this->usuarioCon('Super Admin'))
+            ->get(route('dashboard.acceder', 'tienda'))
             ->assertNotFound();
     }
 

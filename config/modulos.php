@@ -189,7 +189,7 @@ return [
         'icono' => 'magnifying-glass',
         'url' => '/consultas',
         'externo' => false,
-        'estado' => 'desarrollo',
+        'estado' => 'produccion',
         'categoria' => 'institucional',
         'responsable' => 'Dirección de Informática',
         'api_salud' => null,

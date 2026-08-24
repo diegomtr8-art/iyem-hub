@@ -78,9 +78,25 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 - `BuscadorGlobalTest`: seis pruebas de búsqueda, vínculos, mínimo de
   caracteres, truncado y aislamiento del Tester.
 
+- Módulo Consultas 360° en `/consultas`, con seis consultas predefinidas:
+  personas por municipio, cruce de módulos con operadores Y/O/SIN, embudo
+  del emprendedor, cobertura territorial, personas sin actividad y calidad
+  de datos.
+- Cada consulta trae filtros de fecha y municipio, tabla paginada del lado
+  del servidor, gráfica de Chart.js, exportación a XLSX y CSV, y enlace
+  permanente compartible.
+- Componente `Grafica` con registro selectivo de Chart.js y paleta
+  institucional.
+- `ConsultaExport`: XLSX con encabezado guinda, tipografía Arial y fila de
+  encabezados congelada.
+- `ConsultasTest`: 16 pruebas que cubren las seis consultas, los tres
+  operadores del cruce, la exportación y los permisos.
+- Dependencias `chart.js` y `maatwebsite/excel`.
+
 ### Cambiado
 
 - Las rutas de API pasan de `/api/personas` a `/api/v1/personas`.
+- El módulo `consultas` pasa de `desarrollo` a `produccion`.
 - La barra inferior de teléfono cambia Mapa por Buscar y Consultas, que es
   a donde se va más seguido.
 
