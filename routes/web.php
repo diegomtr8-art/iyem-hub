@@ -21,21 +21,36 @@ Route::middleware([
 
     Route::redirect('/perfil', '/user/profile')->name('perfil');
 
-    Route::get('/padron', [PadronController::class, 'index'])
-        ->middleware('permission:ver-padron')
-        ->name('padron.index');
-    Route::get('/padron/mapa', [PadronController::class, 'mapa'])
-        ->middleware('permission:ver-padron')
-        ->name('padron.mapa');
-    Route::get('/padron/crear', [PadronController::class, 'create'])
-        ->middleware('permission:crear-padron')
-        ->name('padron.create');
-    Route::post('/padron', [PadronController::class, 'store'])
-        ->middleware('permission:crear-padron')
-        ->name('padron.store');
-    Route::put('/padron/{persona}', [PadronController::class, 'update'])
-        ->middleware('permission:crear-padron')
-        ->name('padron.update');
+    /*
+    |--------------------------------------------------------------------------
+    | Padrón Central
+    |--------------------------------------------------------------------------
+    |
+    | Las rutas estáticas van antes de `/padron/{persona}`: si no, Laravel
+    | intentaría resolver "mapa" y "crear" como identificadores de persona.
+    |
+    */
+    Route::prefix('padron')->name('padron.')->group(function () {
+        Route::middleware('permission:ver-padron')->group(function () {
+            Route::get('/', [PadronController::class, 'index'])->name('index');
+            Route::get('/mapa', [PadronController::class, 'mapa'])->name('mapa');
+        });
+
+        Route::middleware('permission:crear-padron')->group(function () {
+            Route::get('/crear', [PadronController::class, 'create'])->name('create');
+            Route::post('/', [PadronController::class, 'store'])->name('store');
+        });
+
+        Route::middleware('permission:ver-padron')->group(function () {
+            Route::get('/{persona}', [PadronController::class, 'show'])->name('show');
+        });
+
+        Route::middleware('permission:editar-padron')->group(function () {
+            Route::put('/{persona}', [PadronController::class, 'update'])->name('update');
+            Route::post('/{persona}/etiquetas', [PadronController::class, 'agregarEtiqueta'])->name('etiquetas.store');
+            Route::delete('/{persona}/etiquetas/{etiqueta}', [PadronController::class, 'quitarEtiqueta'])->name('etiquetas.destroy');
+        });
+    });
 
     Route::middleware('role:Super Admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('index');

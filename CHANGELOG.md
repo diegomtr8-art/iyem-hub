@@ -48,6 +48,17 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 - Utilidades móviles en `app.css`: áreas seguras, área táctil de 44 px y
   tipografía de 16 px en los campos, que evita el zoom automático de Safari.
 - Composable `usePermisos` y componente `Paginacion`.
+- Ficha 360° de la persona en `/padron/{persona}`, con cinco pestañas: datos
+  generales en secciones colapsables, línea de tiempo unificada de todos los
+  módulos, vínculos con enlace profundo, etiquetas editables con
+  autocompletado y auditoría filtrable por campo y por módulo.
+- `config/padron.php`: secciones, etiquetas de campo, etiquetas sugeridas y
+  expresiones regulares de validación de CURP, RFC, teléfono y código postal.
+- Servicio `FichaPersona`, que arma la ficha y la línea de tiempo.
+- Mapa con agrupamiento por municipio, filtros por etiqueta y por módulo de
+  origen, y panel lateral con el detalle de la persona.
+- `PadronFichaTest`: seis pruebas de ficha, línea de tiempo, enmascarado,
+  aislamiento del Tester y auditoría de etiquetas.
 
 ### Cambiado
 

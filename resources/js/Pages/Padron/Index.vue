@@ -132,11 +132,11 @@ const colorEstado = (estado) => ({
              horizontal; apilada se lee de un vistazo.
              ============================================================ -->
         <ul v-if="personas.data.length" class="mt-4 space-y-3 md:hidden">
-            <li
-                v-for="persona in personas.data"
-                :key="persona.id"
-                class="rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft"
-            >
+            <li v-for="persona in personas.data" :key="persona.id">
+                <Link
+                    :href="route('padron.show', persona.id)"
+                    class="block rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft transition-all duration-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
+                >
                 <div class="flex items-start justify-between gap-3">
                     <p class="min-w-0 flex-1 font-semibold text-gray-800">
                         {{ persona.nombre_completo }}
@@ -175,6 +175,7 @@ const colorEstado = (estado) => ({
                         </dd>
                     </div>
                 </dl>
+                </Link>
             </li>
         </ul>
 
@@ -213,8 +214,13 @@ const colorEstado = (estado) => ({
                         :key="persona.id"
                         class="transition-colors duration-150 hover:bg-iyem-50/60"
                     >
-                        <td class="px-4 py-3 font-medium text-gray-800">
-                            {{ persona.nombre_completo }}
+                        <td class="px-4 py-3 font-medium">
+                            <Link
+                                :href="route('padron.show', persona.id)"
+                                class="text-gray-800 underline-offset-2 transition hover:text-iyem-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
+                            >
+                                {{ persona.nombre_completo }}
+                            </Link>
                         </td>
                         <td class="px-4 py-3 text-gray-600">
                             {{ persona.email || '—' }}
