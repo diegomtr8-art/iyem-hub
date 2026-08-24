@@ -7,6 +7,17 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Corregido — endurecimiento previo al despliegue
+
+- `DatabaseSeeder` ya no siembra personas ficticias en producción. Antes,
+  un `db:seed --force` dentro de un guion de despliegue habría metido 240
+  personas inventadas al padrón real.
+- Se restauran las rutas de API sin versionar (`/api/personas`) como alias
+  deprecados del controlador original. Al mover todo a `/api/v1` habrían
+  quedado en 404, rompiendo en silencio a cualquier módulo satélite que
+  todavía las llame.
+- `SeedersProduccionTest` y `ApiLegadaTest` cubren ambos casos.
+
 ## [0.2.0] - 2026-08-24
 
 ### Agregado

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\PersonaController as PersonaControllerLegado;
 use App\Http\Controllers\Api\V1\EventoController;
 use App\Http\Controllers\Api\V1\PersonaController;
 use App\Http\Controllers\Api\V1\SaludController;
@@ -62,6 +63,36 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->name('sso.validar');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Rutas legadas — DEPRECADAS
+|--------------------------------------------------------------------------
+|
+| Las rutas sin versionar que existían antes de `/api/v1`. Se conservan
+| porque no hay forma de saber desde aquí si algún sistema satélite en
+| producción todavía las llama: quitarlas de golpe lo rompería en silencio,
+| y el costo de mantenerlas es este bloque.
+|
+| Se marcan con la cabecera `Deprecation` para que quien las siga usando lo
+| note en sus propios registros.
+|
+| RETIRAR cuando se confirme que ningún módulo las consume. Revisar con:
+|
+|     SELECT name, last_used_at FROM personal_access_tokens;
+|
+*/
+Route::middleware(['auth:sanctum', 'throttle:api-sistemas'])
+    ->group(function () {
+        Route::prefix('personas')->group(function () {
+            Route::get('/buscar', [PersonaControllerLegado::class, 'buscar'])->name('api.personas.buscar');
+            Route::get('/por-municipio/{municipio}', [PersonaControllerLegado::class, 'porMunicipio'])->name('api.personas.por-municipio');
+            Route::get('/por-etiqueta/{etiqueta}', [PersonaControllerLegado::class, 'porEtiqueta'])->name('api.personas.por-etiqueta');
+        });
+
+        Route::apiResource('personas', PersonaControllerLegado::class)
+            ->parameters(['personas' => 'persona']);
+    });
 
 /*
 |--------------------------------------------------------------------------
