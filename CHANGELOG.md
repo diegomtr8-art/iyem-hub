@@ -72,9 +72,17 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 - `ApiPadronTest`: 21 pruebas de autenticación, habilidades, los nueve
   endpoints, idempotencia y las cuatro rutas de coincidencia.
 
+- Buscador global 360° con atajo ⌘K / Ctrl+K: busca personas por nombre,
+  CURP, RFC, correo o teléfono y muestra en qué módulos ya aparecen.
+  Navegable con flechas y Enter, con debounce de 300 ms.
+- `BuscadorGlobalTest`: seis pruebas de búsqueda, vínculos, mínimo de
+  caracteres, truncado y aislamiento del Tester.
+
 ### Cambiado
 
 - Las rutas de API pasan de `/api/personas` a `/api/v1/personas`.
+- La barra inferior de teléfono cambia Mapa por Buscar y Consultas, que es
+  a donde se va más seguido.
 
 ### Cambiado
 

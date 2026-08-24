@@ -5,6 +5,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import IconoNav from '@/Components/IconoNav.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+import BuscadorGlobal from '@/Components/BuscadorGlobal.vue';
 
 defineProps({
     title: String,
@@ -15,6 +16,7 @@ const user = () => page.props.auth.user;
 
 const sidebarOpen = ref(false);
 const modulosAbiertos = ref(true);
+const buscador = ref(null);
 
 // Al navegar, el cajón debe cerrarse solo. Si no, en móvil se llega a la
 // página nueva con el menú encima tapándola.
@@ -55,22 +57,29 @@ const destinosInferiores = computed(() => {
             href: route('padron.index'),
             activo: esActivo('padron'),
         });
+    }
+
+    // route().has() ademas del permiso: el modulo de consultas puede estar
+    // habilitado para el rol antes de que su ruta exista en el despliegue.
+    if (puede('ver-consultas') && route().has('consultas.index')) {
         destinos.push({
-            clave: 'mapa',
-            texto: 'Mapa',
-            icono: 'mapa',
-            href: route('padron.mapa'),
-            activo: route().current('padron.mapa'),
+            clave: 'consultas',
+            texto: 'Consultas',
+            icono: 'chart',
+            href: route('consultas.index'),
+            activo: esActivo('consultas'),
         });
     }
 
-    destinos.push({
-        clave: 'menu',
-        texto: 'Menú',
-        icono: 'menu',
-        accion: () => { sidebarOpen.value = true; },
-        activo: false,
-    });
+    if (puede('ver-padron')) {
+        destinos.push({
+            clave: 'buscar',
+            texto: 'Buscar',
+            icono: 'buscar',
+            accion: () => buscador.value?.abrir(),
+            activo: false,
+        });
+    }
 
     destinos.push({
         clave: 'perfil',
@@ -209,7 +218,10 @@ const destinosInferiores = computed(() => {
                     </div>
                 </div>
 
-                <Dropdown align="right" width="48">
+                <div class="flex items-center gap-2">
+                    <BuscadorGlobal ref="buscador" />
+
+                    <Dropdown align="right" width="48">
                     <template #trigger>
                         <button type="button" class="toque-minimo flex items-center justify-end gap-2 rounded-full text-sm transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario">
                             <img
@@ -232,7 +244,8 @@ const destinosInferiores = computed(() => {
                             </DropdownLink>
                         </form>
                     </template>
-                </Dropdown>
+                    </Dropdown>
+                </div>
             </header>
 
             <!--

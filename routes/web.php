@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\UsuarioController;
+use App\Http\Controllers\BuscadorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PadronController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,11 @@ Route::middleware([
     Route::get('/dashboard/modulos/{slug}', [DashboardController::class, 'acceder'])->name('dashboard.acceder');
 
     Route::redirect('/perfil', '/user/profile')->name('perfil');
+
+    // Buscador global (paleta de comandos). Responde JSON, no Inertia.
+    Route::get('/buscar', BuscadorController::class)
+        ->middleware('permission:ver-padron')
+        ->name('buscar');
 
     /*
     |--------------------------------------------------------------------------
