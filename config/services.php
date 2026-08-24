@@ -4,6 +4,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Padrón Central del IYEM
+    |--------------------------------------------------------------------------
+    |
+    | Credenciales que este proyecto usa para consumir la API del padrón
+    | cuando actúa como cliente (por ejemplo, en pruebas de integración).
+    | Los sistemas satélite declaran estas mismas claves en su propio .env.
+    |
+    */
+
+    'padron' => [
+        'url' => env('IYEM_PADRON_URL', env('APP_URL').'/api/v1'),
+        'token' => env('IYEM_PADRON_TOKEN'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Third Party Services
     |--------------------------------------------------------------------------
     |

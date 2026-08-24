@@ -59,6 +59,22 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
   origen, y panel lateral con el detalle de la persona.
 - `PadronFichaTest`: seis pruebas de ficha, línea de tiempo, enmascarado,
   aislamiento del Tester y auditoría de etiquetas.
+- API del Padrón Central en `/api/v1`, con nueve endpoints y autenticación
+  por sistema mediante tokens de Sanctum con habilidades.
+- Tablas `sistemas_integrados` y `eventos_modulo`.
+- Servicio `ResolvedorPersonas`: resuelve o crea por CURP > RFC > correo >
+  teléfono+nombre, completando huecos sin pisar lo ya capturado.
+- Comando `php artisan sistemas:registrar` para dar de alta un sistema
+  satélite y emitir su token.
+- Límite de 120 peticiones por minuto y por sistema.
+- `docs/API_PADRON.md` con ejemplos de curl de cada endpoint y la guía de
+  integración en tres pasos.
+- `ApiPadronTest`: 21 pruebas de autenticación, habilidades, los nueve
+  endpoints, idempotencia y las cuatro rutas de coincidencia.
+
+### Cambiado
+
+- Las rutas de API pasan de `/api/personas` a `/api/v1/personas`.
 
 ### Cambiado
 
