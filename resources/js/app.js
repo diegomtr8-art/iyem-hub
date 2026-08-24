@@ -23,3 +23,20 @@ createInertiaApp({
         color: '#9F2241',
     },
 });
+
+/*
+ * Registro del service worker.
+ *
+ * Solo en producción: en desarrollo, un worker sirviendo assets guardados
+ * pelearía con el recarga-en-caliente de Vite y daría depuraciones falsas.
+ * El worker solo cachea assets con huella de contenido; nunca HTML ni
+ * respuestas de la API (ver public/sw.js).
+ */
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {
+            // Sin service worker la aplicación funciona igual: solo se pierde
+            // la instalación y el arranque en frío más rápido.
+        });
+    });
+}

@@ -41,6 +41,13 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 - Servicio `IndicadoresHub` con los KPIs globales y el mini-dato por módulo.
 - Componentes `TarjetaModulo`, `TarjetaKpi`, `BadgeEstado` y `PuntoSalud`.
 - `DashboardTest`: cinco pruebas de permisos por rol y de bitácora.
+- Barra de navegación inferior en teléfono, con `env(safe-area-inset-bottom)`
+  para la barra de gestos del iPhone.
+- Aplicación instalable: `manifest.json`, service worker conservador en
+  `public/sw.js`, iconos de 512 px normal y maskable, y las meta de iOS.
+- Utilidades móviles en `app.css`: áreas seguras, área táctil de 44 px y
+  tipografía de 16 px en los campos, que evita el zoom automático de Safari.
+- Composable `usePermisos` y componente `Paginacion`.
 
 ### Cambiado
 

@@ -41,7 +41,28 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
+
+            /*
+             * Permisos del usuario, como prop de primer nivel.
+             *
+             * No van anidados bajo `auth` a propósito: ese prop lo publica
+             * `Jetstream\Http\Middleware\ShareInertiaData` por su cuenta, con
+             * `Inertia::share()`, y escribirlo aquí lo reemplazaría entero,
+             * dejando la aplicación sin `auth.user`.
+             *
+             * Se envía solo la lista de nombres: es lo único que la interfaz
+             * necesita para no ofrecer botones que el servidor va a rechazar.
+             */
+            'permisos' => fn () => $usuario
+                ? $usuario->getAllPermissions()->pluck('name')->values()
+                : [],
+
             'modulosSidebar' => fn () => $catalogo->paraSidebar($usuario),
+
+            'flash' => fn () => [
+                'success' => $request->session()->get('flash.success'),
+                'error' => $request->session()->get('flash.error'),
+            ],
         ];
     }
 }
