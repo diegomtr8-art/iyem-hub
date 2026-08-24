@@ -92,7 +92,7 @@ class PersonaTest extends TestCase
 
     public function test_seeder_genera_al_menos_diez_personas(): void
     {
-        (new PersonaSeeder())->run();
+        (new PersonaSeeder)->run();
 
         $this->assertGreaterThanOrEqual(10, Persona::count());
     }

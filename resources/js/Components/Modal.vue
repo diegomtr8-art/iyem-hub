@@ -70,7 +70,7 @@ const maxWidthClass = computed(() => {
 
 <template>
     <dialog class="z-50 m-0 min-h-full min-w-full overflow-y-auto bg-transparent backdrop:bg-transparent" ref="dialog">
-        <div class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50" scroll-region>
+        <div class="pad-seguro-lados fixed inset-0 z-50 overflow-y-auto px-4 py-6 sm:px-0" scroll-region>
             <transition
                 enter-active-class="ease-out duration-300"
                 enter-from-class="opacity-0"
@@ -92,8 +92,18 @@ const maxWidthClass = computed(() => {
                 leave-from-class="opacity-100 translate-y-0 sm:scale-100"
                 leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-                <div v-show="show" class="mb-6 transform overflow-hidden rounded-2xl bg-white shadow-soft-lg transition-all sm:mx-auto sm:w-full" :class="maxWidthClass">
-                    <slot v-if="showSlot"/>
+                <!--
+                    max-h-[85dvh] con scroll interno: en `dvh` y no en `vh`
+                    porque Safari en iOS mide `vh` contra la ventana con la
+                    barra de direcciones oculta, y el modal termina mas alto
+                    que la pantalla, con el boton de guardar fuera de vista.
+                -->
+                <div
+                    v-show="show"
+                    class="scrollbar-fina scroll-suave-ios mb-6 flex max-h-[85dvh] transform flex-col overflow-y-auto overscroll-contain rounded-2xl bg-white shadow-soft-lg transition-all sm:mx-auto sm:w-full"
+                    :class="maxWidthClass"
+                >
+                    <slot v-if="showSlot" />
                 </div>
             </transition>
         </div>

@@ -33,7 +33,7 @@ const submit = () => {
             </h2>
         </template>
 
-        <div class="max-w-xl rounded-2xl border border-iyem-claro bg-white p-6 shadow-soft sm:p-8">
+        <div class="max-w-xl rounded-2xl border border-iyem-200 bg-white p-5 shadow-soft sm:p-8">
             <form class="space-y-4" @submit.prevent="submit">
                 <div>
                     <InputLabel for="nombre_completo" value="Nombre completo" />
@@ -43,25 +43,61 @@ const submit = () => {
 
                 <div>
                     <InputLabel for="email" value="Correo electrónico" />
-                    <TextInput id="email" v-model="form.email" type="email" class="mt-1 block w-full" />
+                    <TextInput
+                        id="email"
+                        v-model="form.email"
+                        type="email"
+                        inputmode="email"
+                        autocomplete="email"
+                        autocapitalize="none"
+                        spellcheck="false"
+                        class="mt-1 block w-full"
+                    />
                     <InputError class="mt-2" :message="form.errors.email" />
                 </div>
 
                 <div>
                     <InputLabel for="telefono" value="Teléfono" />
-                    <TextInput id="telefono" v-model="form.telefono" class="mt-1 block w-full" />
+                    <TextInput
+                        id="telefono"
+                        v-model="form.telefono"
+                        type="tel"
+                        inputmode="numeric"
+                        autocomplete="tel-national"
+                        maxlength="10"
+                        placeholder="9991234567"
+                        class="mt-1 block w-full tabular-nums"
+                    />
                     <InputError class="mt-2" :message="form.errors.telefono" />
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <InputLabel for="curp" value="CURP" />
-                        <TextInput id="curp" v-model="form.curp" class="mt-1 block w-full uppercase" maxlength="18" />
+                        <TextInput
+                            id="curp"
+                            v-model="form.curp"
+                            maxlength="18"
+                            autocapitalize="characters"
+                            autocomplete="off"
+                            spellcheck="false"
+                            placeholder="18 caracteres"
+                            class="mt-1 block w-full uppercase"
+                        />
                         <InputError class="mt-2" :message="form.errors.curp" />
                     </div>
                     <div>
                         <InputLabel for="rfc" value="RFC" />
-                        <TextInput id="rfc" v-model="form.rfc" class="mt-1 block w-full uppercase" maxlength="13" />
+                        <TextInput
+                            id="rfc"
+                            v-model="form.rfc"
+                            maxlength="13"
+                            autocapitalize="characters"
+                            autocomplete="off"
+                            spellcheck="false"
+                            placeholder="12 o 13 caracteres"
+                            class="mt-1 block w-full uppercase"
+                        />
                         <InputError class="mt-2" :message="form.errors.rfc" />
                     </div>
                 </div>
@@ -72,7 +108,7 @@ const submit = () => {
                     <InputError class="mt-2" :message="form.errors.calle" />
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <InputLabel for="municipio" value="Municipio" />
                         <TextInput id="municipio" v-model="form.municipio" class="mt-1 block w-full" />
@@ -80,12 +116,19 @@ const submit = () => {
                     </div>
                     <div>
                         <InputLabel for="codigo_postal" value="Código postal" />
-                        <TextInput id="codigo_postal" v-model="form.codigo_postal" class="mt-1 block w-full" />
+                        <TextInput
+                            id="codigo_postal"
+                            v-model="form.codigo_postal"
+                            inputmode="numeric"
+                            autocomplete="postal-code"
+                            maxlength="5"
+                            class="mt-1 block w-full tabular-nums"
+                        />
                         <InputError class="mt-2" :message="form.errors.codigo_postal" />
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <InputLabel for="tipo_persona" value="Tipo de persona" />
                         <select

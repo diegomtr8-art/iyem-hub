@@ -2,9 +2,9 @@
 
 namespace App\Models\Modulos;
 
+use App\Models\Persona;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Persona;
 
 class JuridicoAsesoria extends Model
 {

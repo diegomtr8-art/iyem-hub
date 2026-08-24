@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\CatalogoModulos;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,20 +36,37 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $user = $request->user();
+        $usuario = $request->user();
+        $catalogo = app(CatalogoModulos::class);
 
         return [
             ...parent::share($request),
-            'modulosSidebar' => fn () => $user
-                ? collect(config('modulos'))
-                    ->filter(fn ($modulo, $slug) => $user->can("ver-{$slug}"))
-                    ->map(fn ($modulo, $slug) => [
-                        'slug' => $slug,
-                        'nombre' => $modulo['nombre'],
-                        'url' => $modulo['externo'] ? route('dashboard.acceder', $slug) : $modulo['url'],
-                    ])
-                    ->values()
+
+            /*
+             * Permisos del usuario, como prop de primer nivel.
+             *
+             * No van anidados bajo `auth` a propósito: ese prop lo publica
+             * `Jetstream\Http\Middleware\ShareInertiaData` por su cuenta, con
+             * `Inertia::share()`, y escribirlo aquí lo reemplazaría entero,
+             * dejando la aplicación sin `auth.user`.
+             *
+             * Se envía solo la lista de nombres: es lo único que la interfaz
+             * necesita para no ofrecer botones que el servidor va a rechazar.
+             */
+            'permisos' => fn () => $usuario
+                ? $usuario->getAllPermissions()->pluck('name')->values()
                 : [],
+
+            'modulosSidebar' => fn () => $catalogo->paraSidebar($usuario),
+
+            'flash' => fn () => [
+                'success' => $request->session()->get('flash.success'),
+                'error' => $request->session()->get('flash.error'),
+            ],
+
+            // Vista previa de una importación. Viaja por la sesión porque el
+            // archivo se sube con una petición y se confirma con otra.
+            'vistaPrevia' => fn () => $request->session()->get('vistaPrevia'),
         ];
     }
 }

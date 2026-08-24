@@ -38,3 +38,65 @@ body {
     background-image: radial-gradient(currentColor 1px, transparent 1px);
     background-size: 22px 22px;
 }
+
+/* ------------------------------------------------------------------ *
+ * Adaptación a iPhone y iPad
+ * ------------------------------------------------------------------ */
+
+/*
+ * Safari en iOS hace zoom automático al enfocar un campo cuya tipografía
+ * mide menos de 16 px, y al salir del campo no vuelve al nivel anterior:
+ * la página queda desplazada y con scroll horizontal. Forzar 16 px en los
+ * controles lo evita de raíz. Solo aplica a punteros gruesos (táctil),
+ * para no engordar los formularios en escritorio.
+ */
+@media (pointer: coarse) {
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea {
+        font-size: 16px;
+    }
+}
+
+/* Respeto del notch y de la barra de gestos, habilitado por
+   viewport-fit=cover en la plantilla raíz. */
+.pad-seguro-abajo {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pad-seguro-arriba {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pad-seguro-lados {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Altura de la barra inferior más el área segura: el contenido reserva
+   este espacio para que el último elemento no quede tapado. */
+.espacio-barra-inferior {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * El scroll horizontal siempre debe ocurrir dentro de un contenedor, nunca
+ * en el body. Esta regla es la red de seguridad: si algo se desborda, se
+ * recorta en lugar de arrastrar la página entera.
+ */
+html,
+body {
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+}
+
+/* Área táctil mínima de Apple (44x44 pt) para controles compactos. */
+.toque-minimo {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Momentum de scroll en contenedores internos bajo iOS. */
+.scroll-suave-ios {
+    -webkit-overflow-scrolling: touch;
+}
