@@ -2,6 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Modulos\CitasAgendamiento;
+use App\Models\Modulos\CreaSolicitud;
+use App\Models\Modulos\HerenciaVivaCliente;
+use App\Models\Modulos\ImpulsateInscripcion;
+use App\Models\Modulos\JuridicoAsesoria;
+use App\Models\Modulos\NodicoMembresia;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -73,42 +79,42 @@ class Persona extends Model
     // Relaciones
     public function creaSolicitudes()
     {
-        return $this->hasMany(\App\Models\Modulos\CreaSolicitud::class);
+        return $this->hasMany(CreaSolicitud::class);
     }
 
     public function impulstateInscripciones()
     {
-        return $this->hasMany(\App\Models\Modulos\ImpulsateInscripcion::class);
+        return $this->hasMany(ImpulsateInscripcion::class);
     }
 
     public function nodicoMembresias()
     {
-        return $this->hasMany(\App\Models\Modulos\NodicoMembresia::class);
+        return $this->hasMany(NodicoMembresia::class);
     }
 
     public function herenciaVivaClientes()
     {
-        return $this->hasMany(\App\Models\Modulos\HerenciaVivaCliente::class);
+        return $this->hasMany(HerenciaVivaCliente::class);
     }
 
     public function juridicoAsesorias()
     {
-        return $this->hasMany(\App\Models\Modulos\JuridicoAsesoria::class);
+        return $this->hasMany(JuridicoAsesoria::class);
     }
 
     public function citasAgendamientos()
     {
-        return $this->hasMany(\App\Models\Modulos\CitasAgendamiento::class);
+        return $this->hasMany(CitasAgendamiento::class);
     }
 
     public function etiquetas()
     {
-        return $this->hasMany(\App\Models\PersonaEtiqueta::class, 'persona_id');
+        return $this->hasMany(PersonaEtiqueta::class, 'persona_id');
     }
 
     public function auditorias()
     {
-        return $this->hasMany(\App\Models\PersonaAuditoria::class);
+        return $this->hasMany(PersonaAuditoria::class);
     }
 
     // Scopes

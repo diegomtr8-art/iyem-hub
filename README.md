@@ -1,59 +1,142 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# IYEM Hub — Plataforma central del Instituto Yucateco de Emprendedores
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Hub tipo ERP desde el cual el IYEM accede y consulta toda su operación.
+Concentra el **Padrón Central** (fuente única de verdad sobre las personas
+que atiende el instituto) y funciona como puerta de entrada a los sistemas
+satélite del ecosistema.
 
-## About Laravel
+- **Producción:** https://iyemyucatan.com
+- **Stack:** Laravel 12 · Inertia 2 · Vue 3 · Tailwind 3 · Jetstream 5.5 · MySQL
+- **Autorización:** `spatie/laravel-permission` (roles + permisos `ver-{slug}`)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Qué resuelve
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Cada sistema del IYEM (CREA, Impúlsate, Jurídico, Nódico, Herencia Viva…)
+tiene su propia base de datos y su propia idea de quién es "la persona".
+El resultado es el mismo emprendedor capturado cinco veces, con cinco
+teléfonos distintos y sin forma de responder preguntas como *"¿cuántos de
+los que tomaron Impúlsate terminaron pidiendo un crédito CREA?"*.
 
-## Learning Laravel
+Este hub no migra esas bases. Les da un `persona_id` común y una API para
+resolverlo, de modo que la información se cruce sin mover un solo registro
+de su lugar.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Requisitos
 
-## Laravel Sponsors
+| Herramienta | Versión mínima |
+|---|---|
+| PHP | 8.2 |
+| Composer | 2.x |
+| Node.js | 20 |
+| MySQL | 5.7 (o MariaDB 10.4) |
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+En Windows, XAMPP con PHP 8.2+ cubre PHP y MySQL.
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Instalación local desde cero
 
-## Contributing
+```bash
+# 1. Clonar dentro del directorio de XAMPP
+cd C:\xampp\htdocs
+git clone <url-del-repositorio> iyemyucatan
+cd iyemyucatan
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# 2. Dependencias
+composer install
+npm install
 
-## Code of Conduct
+# 3. Entorno
+cp .env.example .env
+php artisan key:generate
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Edita `.env` y ajusta la conexión a MySQL:
 
-## Security Vulnerabilities
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=iyemyucatan
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Crea la base de datos vacía (desde phpMyAdmin o por consola):
 
-## License
+```sql
+CREATE DATABASE iyemyucatan CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+# 4. Esquema y datos
+php artisan migrate --seed
+
+# 5. Levantar
+composer dev        # servidor + colas + logs + Vite, todo junto
+```
+
+O por separado, en dos terminales:
+
+```bash
+php artisan serve   # http://127.0.0.1:8000
+npm run dev
+```
+
+---
+
+## Entrar con el usuario de pruebas
+
+El seeder crea una cuenta de solo lectura pensada para prestadores de
+servicio social y para demostraciones:
+
+| Campo | Valor |
+|---|---|
+| Correo | `tester@iyemyucatan.com` |
+| Contraseña | `1234567123` |
+| Rol | `Tester` |
+| Vigencia | 90 días a partir del seed |
+
+Esa cuenta **solo ve personas de demostración** (`demo = true`) y tiene los
+campos sensibles enmascarados (CURP, RFC, teléfono y domicilio se muestran
+como `****...89`). No puede exportar, no puede escribir en el padrón y no
+entra al panel de administración.
+
+El `UserSeeder` además imprime en consola la contraseña generada al azar
+para `admin@iyem.mx` (Super Admin). Anótala: no se vuelve a mostrar.
+
+---
+
+## Comandos útiles
+
+```bash
+php artisan test                  # suite completa
+./vendor/bin/pint                 # formatear código
+./vendor/bin/pint --test          # verificar formato sin escribir
+php artisan padron:duplicados     # reporte de personas duplicadas
+php artisan migrate:fresh --seed  # reconstruir la base (destructivo)
+npm run build                     # compilar assets para producción
+```
+
+---
+
+## Documentación
+
+| Documento | Contenido |
+|---|---|
+| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Cómo encaja el hub en el ecosistema y cómo funciona el padrón central |
+| [`docs/API_PADRON.md`](docs/API_PADRON.md) | Endpoints, autenticación por sistema y ejemplos de `curl` |
+| [`docs/SSO.md`](docs/SSO.md) | Cómo cada sistema satélite consumirá el inicio de sesión único |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Flujo de ramas, convención de commits y checklist de PR |
+| [`CHANGELOG.md`](CHANGELOG.md) | Historial de versiones |
+| [`DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md) | Esquema de tablas |
+
+---
+
+## Licencia
+
+Software interno del Instituto Yucateco de Emprendedores. Todos los derechos reservados.

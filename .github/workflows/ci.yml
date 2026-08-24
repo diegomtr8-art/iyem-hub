@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruebas:
+    name: Pruebas y formato
+    runs-on: ubuntu-latest
+
+    # La suite corre sobre SQLite en memoria (ver phpunit.xml), por eso no se
+    # levanta un servicio MySQL: sería más lento y no aportaría cobertura.
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Preparar PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_sqlite, sqlite3, bcmath, gd, zip, intl
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Cachear dependencias de Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Instalar dependencias de PHP
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Preparar Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependencias de JavaScript
+        run: npm ci
+
+      - name: Compilar assets
+        run: npm run build
+
+      - name: Preparar el entorno
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Correr la suite de pruebas
+        run: php artisan test
+
+      - name: Verificar el formato con Pint
+        run: ./vendor/bin/pint --test
