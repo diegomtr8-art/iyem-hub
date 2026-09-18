@@ -14,11 +14,17 @@ const form = useForm({
     rfc: '',
     calle: '',
     codigo_postal: '',
+    municipio_id: null,
     municipio: '',
     estado: 'Yucatán',
     tipo_persona: 'fisica',
     estado_persona: 'activa',
 });
+
+const actualizarNombreMunicipio = () => {
+    const seleccionado = props.municipios.find(m => m.id === form.municipio_id);
+    form.municipio = seleccionado ? seleccionado.nombre : '';
+};
 
 const submit = () => {
     form.post(route('padron.store'));
@@ -111,7 +117,19 @@ const submit = () => {
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <InputLabel for="municipio" value="Municipio" />
-                        <TextInput id="municipio" v-model="form.municipio" class="mt-1 block w-full" />
+                        <select
+                            id="municipio_id"
+                            v-model="form.municipio_id"
+                            @change="actualizarNombreMunicipio"
+                            class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                            <option value="">Selecciona un municipio...</option>
+                            <option 
+                                v-for="mun in municipios" 
+                                :key="mun.id" 
+                                :value="mun.id">
+                                {{ mun.nombre }}
+                            </option>
+                        </select>
                         <InputError class="mt-2" :message="form.errors.municipio" />
                     </div>
                     <div>

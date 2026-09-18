@@ -49,6 +49,13 @@ class DatabaseSeeder extends Seeder
             // exista, y el padrón de demostración es lo único que ese rol ve.
             TesterSeeder::class,
             PadronDemoSeeder::class,
+            SolicitudesDemo::class,
+            ImpulsateInscripcionesDemo::class,
+            NodicoMembresiasDemo::class,
+            HerenciaVivaClientesDemo::class,
+            JuridicoAsesoriasDemo::class,
+            CitasAgendamientosDemo::class,
+            YucatanMunicipios::class,
         ]);
     }
 }
