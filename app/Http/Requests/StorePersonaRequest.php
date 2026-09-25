@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\CurpValida;
+use App\Rules\RfcValido;
+use App\Rules\TelefonoMexicano;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,14 +20,24 @@ class StorePersonaRequest extends FormRequest
         return [
             'nombre_completo' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', 'unique:personas,email'],
-            'telefono' => ['nullable', 'string', 'regex:/^\d{10,20}$/'],
-            'telefono_secundario' => ['nullable', 'string', 'regex:/^\d{10,20}$/'],
+
+            'telefono' => ['nullable', 'string', new TelefonoMexicano],
+            'telefono_secundario' => ['nullable', 'string', new TelefonoMexicano],
 
             'curp' => [
-                'nullable', 'string', 'size:18', 'unique:personas,curp',
-                'regex:/^[A-Z]{4}\d{6}[HM][A-Z]{5}[0-9A-Z]\d$/',
+                'nullable', 
+                'string', 
+                'unique:personas,curp',
+                new CurpValida,
             ],
-            'rfc' => ['nullable', 'string', 'min:12', 'max:13', 'regex:/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/'],
+
+            'rfc' => [
+                'nullable', 
+                'string', 
+                'unique:personas,rfc',
+                new RfcValido,
+            ],
+
             'ine_clave' => ['nullable', 'string', 'max:20'],
 
             'calle' => ['nullable', 'string', 'max:255'],

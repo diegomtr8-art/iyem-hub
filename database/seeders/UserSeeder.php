@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Super',
                 'apellido' => 'Admin',
-                'password' => $passwordSuperAdmin,
+                'password' => '1234567123',
                 'estado' => true,
                 'email_verified_at' => now(),
             ]
