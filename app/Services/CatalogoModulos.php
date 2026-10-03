@@ -114,7 +114,7 @@ class CatalogoModulos
             'categoria' => $modulo['categoria'] ?? 'institucional',
             'responsable' => $modulo['responsable'] ?? null,
             'api_salud' => $modulo['api_salud'] ?? null,
-            'color' => $modulo['color'] ?? 'iyem-primario',
+            'color' => $modulo['color'] ?? 'brand-500',
             'orden' => $modulo['orden'] ?? 99,
             'navegable' => $navegable,
         ];

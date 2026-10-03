@@ -5,6 +5,7 @@ import IconoModulo from '@/Components/IconoModulo.vue';
 import IconoNav from '@/Components/IconoNav.vue';
 import BadgeEstado from '@/Components/BadgeEstado.vue';
 import PuntoSalud from '@/Components/PuntoSalud.vue';
+import { numero } from '@/formato';
 
 const props = defineProps({
     modulo: {
@@ -22,17 +23,23 @@ const props = defineProps({
 });
 
 /**
- * Tailwind no puede resolver clases armadas en tiempo de ejecución, así que
- * el token que declara cada módulo en `config/modulos.php` se traduce aquí
- * a clases literales que el compilador sí ve.
+ * El acento del ícono sale del `color` de `config/modulos.php`, traducido a
+ * clases literales para que Tailwind las vea. El guinda existe solo para
+ * CREA: así se reconoce el sistema al que se sale.
  */
-const fondos = {
-    'iyem-primario': 'bg-iyem-gradient',
-    'iyem-secundario': 'bg-gradient-to-br from-iyem-secundario to-iyem-400',
-    'iyem-dorado': 'bg-gradient-to-br from-iyem-dorado to-amber-600',
+const acentos = {
+    'guinda-700': 'bg-guinda-700 text-white',
+    'brand-500': 'bg-surface-brand text-brand-500 dark:text-brand-300',
 };
 
-const fondoIcono = computed(() => fondos[props.modulo.color] ?? fondos['iyem-primario']);
+const acento = computed(() => acentos[props.modulo.color] ?? acentos['brand-500']);
+
+// Un módulo que no se puede abrir dice por qué, en lugar de parecer
+// clickeable y no responder. El badge ya dice el estado; aquí va quién lo
+// lleva. El área responsable está pendiente de confirmar con el IYEM.
+const motivoNoDisponible = computed(() =>
+    ['Aún no se puede abrir', props.modulo.responsable].filter(Boolean).join(' · '),
+);
 
 /*
  * Tres formas de renderizar la misma tarjeta:
@@ -51,11 +58,16 @@ const etiquetaComponente = computed(() => {
 });
 
 const atributos = computed(() => {
-    if (!props.modulo.navegable) return { 'aria-disabled': 'true' };
+    if (!props.modulo.navegable) return {};
 
     return props.modulo.externo
-        ? { href: props.modulo.url, target: '_blank', rel: 'noopener noreferrer' }
-        : { href: props.modulo.url };
+        ? {
+            href: props.modulo.url,
+            target: '_blank',
+            rel: 'noopener noreferrer',
+            'aria-label': `Abrir ${props.modulo.nombre} (sitio externo, se abre en una pestaña nueva)`,
+        }
+        : { href: props.modulo.url, 'aria-label': `Abrir ${props.modulo.nombre}` };
 });
 </script>
 
@@ -63,79 +75,61 @@ const atributos = computed(() => {
     <component
         :is="etiquetaComponente"
         v-bind="atributos"
-        class="group relative flex rounded-2xl border bg-white/90 backdrop-blur-sm transition-all duration-200"
+        class="group flex rounded-lg border p-5 transition-colors"
         :class="[
-            compacto ? 'items-center gap-4 p-4' : 'flex-col p-5',
+            compacto ? 'items-center gap-4' : 'flex-col',
             modulo.navegable
-                ? 'border-iyem-200 shadow-soft hover:-translate-y-0.5 hover:border-iyem-300 hover:shadow-soft-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario focus-visible:ring-offset-2'
-                : 'border-dashed border-gray-300 bg-white/60 shadow-none',
+                ? 'border-line bg-surface shadow-sm hover:border-line-strong hover:bg-surface-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2'
+                : 'border-line bg-surface-50',
         ]"
     >
-        <div
-            class="flex items-center justify-center rounded-xl text-white shadow-glow"
-            :class="[
-                fondoIcono,
-                compacto ? 'h-11 w-11 shrink-0' : 'h-12 w-12',
-                modulo.navegable ? '' : 'opacity-40 grayscale',
-            ]"
-        >
-            <IconoModulo :icono="modulo.icono" />
+        <div class="flex items-start gap-3" :class="compacto ? 'min-w-0 flex-1' : ''">
+            <span
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md"
+                :class="modulo.navegable ? acento : 'bg-surface-100 text-ink-400'"
+            >
+                <IconoModulo :icono="modulo.icono" />
+            </span>
+
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+                    <h4 class="text-subtitle" :class="modulo.navegable ? 'text-ink' : 'text-ink-600'">
+                        {{ modulo.nombre }}
+                    </h4>
+                    <BadgeEstado :estado="modulo.estado" />
+                </div>
+                <p class="mt-1 text-small text-ink-600" :class="compacto ? 'truncate' : ''">
+                    {{ modulo.descripcion }}
+                </p>
+            </div>
         </div>
 
-        <div :class="compacto ? 'min-w-0 flex-1' : 'mt-4 flex flex-1 flex-col'">
-            <div class="flex items-center gap-2">
-                <h3
-                    class="truncate font-semibold"
-                    :class="modulo.navegable ? 'text-gray-800' : 'text-gray-500'"
-                >
-                    {{ modulo.nombre }}
-                </h3>
-                <PuntoSalud :estado="salud?.estado ?? null" :ms="salud?.ms ?? null" />
-            </div>
+        <p v-if="modulo.dato && !compacto" class="mt-4 flex items-baseline gap-2">
+            <span class="text-number-lg text-ink">{{ numero(modulo.dato.valor) }}</span>
+            <span class="text-small text-ink-600">{{ modulo.dato.etiqueta }}</span>
+        </p>
 
-            <p
-                class="mt-1 text-sm text-gray-500"
-                :class="compacto ? 'truncate' : 'flex-1'"
-            >
-                {{ modulo.descripcion }}
-            </p>
+        <!-- Empuja el pie al fondo para que las tarjetas de una fila alineen. -->
+        <div v-if="!compacto" class="flex-1" aria-hidden="true" />
 
-            <p
-                v-if="modulo.dato && !compacto"
-                class="mt-3 text-sm text-gray-600"
-            >
-                <span class="text-lg font-bold tabular-nums text-iyem-700">
-                    {{ modulo.dato.valor.toLocaleString('es-MX') }}
-                </span>
-                <span class="ml-1.5">{{ modulo.dato.etiqueta }}</span>
-            </p>
-
-            <div
-                class="flex items-center gap-2"
-                :class="compacto ? 'mt-1.5' : 'mt-4 flex-wrap'"
-            >
-                <BadgeEstado :estado="modulo.estado" />
-                <span
-                    v-if="!compacto"
-                    class="text-[0.7rem] uppercase tracking-wide text-gray-400"
-                >
-                    {{ modulo.categoria }}
-                </span>
-
-                <span
-                    v-if="modulo.navegable"
-                    class="ml-auto inline-flex items-center gap-1.5 text-sm font-semibold text-iyem-700 transition-all group-hover:gap-2.5"
-                >
-                    <span :class="compacto ? 'sr-only' : ''">Acceder</span>
+        <div
+            class="flex items-center gap-3"
+            :class="compacto ? 'shrink-0' : 'mt-4 border-t border-line pt-4'"
+        >
+            <template v-if="modulo.navegable">
+                <PuntoSalud
+                    :estado="salud?.estado ?? null"
+                    :ms="salud?.ms ?? null"
+                    :con-texto="!compacto"
+                />
+                <span class="ml-auto inline-flex items-center gap-1.5 text-body-strong text-action group-hover:underline">
+                    <span :class="compacto ? 'sr-only' : ''">Abrir</span>
                     <IconoNav :icono="modulo.externo ? 'externo' : 'arrow'" class="h-4 w-4" />
                 </span>
-                <span
-                    v-else
-                    class="ml-auto text-xs text-gray-400"
-                >
-                    No disponible
-                </span>
-            </div>
+            </template>
+            <p v-else class="text-small text-ink-600">
+                {{ motivoNoDisponible }}
+            </p>
         </div>
     </component>
 </template>

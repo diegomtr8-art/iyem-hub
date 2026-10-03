@@ -23,6 +23,8 @@ const tipografia = {
     small: { fontFamily: sans, fontSize: '13px', lineHeight: '18px', fontWeight: '400' },
     caption: { fontFamily: sans, fontSize: '12px', lineHeight: '16px', fontWeight: '500' },
     overline: { fontFamily: sans, fontSize: '11px', lineHeight: '14px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase' },
+    // Cifra de KPI: medida de display-md, en mono para que se lea como dato.
+    'number-display': { fontFamily: mono, fontSize: '24px', lineHeight: '30px', fontWeight: '600', fontVariantNumeric: 'tabular-nums' },
     'number-lg': { fontFamily: mono, fontSize: '20px', lineHeight: '26px', fontWeight: '600', fontVariantNumeric: 'tabular-nums' },
     number: { fontFamily: mono, fontSize: '15px', lineHeight: '22px', fontWeight: '500', fontVariantNumeric: 'tabular-nums' },
     code: { fontFamily: mono, fontSize: '13px', lineHeight: '20px', fontWeight: '400' },

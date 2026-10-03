@@ -22,7 +22,9 @@
 |                los valores actuales son marcadores, no el organigrama real.
 |   api_salud    URL que el hub consulta para pintar el semáforo de la tarjeta.
 |                null = ese módulo todavía no expone endpoint de salud.
-|   color        Token de `tailwind.config.js` (sin prefijo `bg-`/`text-`).
+|   color        Acento de la tarjeta: `brand-500` para todos, salvo CREA, que
+|                lleva `guinda-700` para que se reconozca el sistema al que se
+|                sale. Es el único lugar del hub donde aparece el guinda.
 |   orden        Posición en la cuadrícula del dashboard.
 |
 */
@@ -39,7 +41,7 @@ return [
         'categoria' => 'financiero',
         'responsable' => 'Dirección de Financiamiento',
         'api_salud' => 'https://crea.iyemyucatan.com/api/salud',
-        'color' => 'iyem-primario',
+        'color' => 'guinda-700',
         'orden' => 1,
     ],
 
@@ -53,7 +55,7 @@ return [
         'categoria' => 'operativo',
         'responsable' => 'Dirección de Capacitación',
         'api_salud' => 'https://impulsate.iyemyucatan.com/api/salud',
-        'color' => 'iyem-secundario',
+        'color' => 'brand-500',
         'orden' => 2,
     ],
 
@@ -67,7 +69,7 @@ return [
         'categoria' => 'institucional',
         'responsable' => 'Dirección Administrativa',
         'api_salud' => 'https://asistencia.iyemyucatan.com/api/salud',
-        'color' => 'iyem-primario',
+        'color' => 'brand-500',
         'orden' => 3,
     ],
 
@@ -81,7 +83,7 @@ return [
         'categoria' => 'institucional',
         'responsable' => 'Dirección Jurídica',
         'api_salud' => 'https://juridico.iyemyucatan.com/api/salud',
-        'color' => 'iyem-primario',
+        'color' => 'brand-500',
         'orden' => 4,
     ],
 
@@ -95,7 +97,7 @@ return [
         'categoria' => 'institucional',
         'responsable' => 'Dirección General',
         'api_salud' => 'https://indicadores.iyemyucatan.com/api/salud',
-        'color' => 'iyem-dorado',
+        'color' => 'brand-500',
         'orden' => 5,
     ],
 
@@ -109,7 +111,7 @@ return [
         'categoria' => 'comercial',
         'responsable' => 'Dirección Comercial',
         'api_salud' => 'https://dashboard.herenciaviva.com/api/salud',
-        'color' => 'iyem-secundario',
+        'color' => 'brand-500',
         'orden' => 6,
     ],
 
@@ -123,7 +125,7 @@ return [
         'categoria' => 'comercial',
         'responsable' => 'Dirección Comercial',
         'api_salud' => 'https://nodico.com.mx/api/salud',
-        'color' => 'iyem-secundario',
+        'color' => 'brand-500',
         'orden' => 7,
     ],
 
@@ -137,7 +139,7 @@ return [
         'categoria' => 'comercial',
         'responsable' => 'Dirección Comercial',
         'api_salud' => null,
-        'color' => 'iyem-secundario',
+        'color' => 'brand-500',
         'orden' => 8,
     ],
 
@@ -151,7 +153,7 @@ return [
         'categoria' => 'operativo',
         'responsable' => 'Dirección de Vinculación',
         'api_salud' => null,
-        'color' => 'iyem-primario',
+        'color' => 'brand-500',
         'orden' => 9,
     ],
 
@@ -165,7 +167,7 @@ return [
         'categoria' => 'comercial',
         'responsable' => 'Dirección Comercial',
         'api_salud' => null,
-        'color' => 'iyem-secundario',
+        'color' => 'brand-500',
         'orden' => 10,
     ],
 
@@ -179,7 +181,7 @@ return [
         'categoria' => 'institucional',
         'responsable' => 'Dirección de Informática',
         'api_salud' => null,
-        'color' => 'iyem-primario',
+        'color' => 'brand-500',
         'orden' => 11,
     ],
 
@@ -193,7 +195,7 @@ return [
         'categoria' => 'institucional',
         'responsable' => 'Dirección de Informática',
         'api_salud' => null,
-        'color' => 'iyem-dorado',
+        'color' => 'brand-500',
         'orden' => 12,
     ],
 
@@ -207,7 +209,7 @@ return [
         'categoria' => 'institucional',
         'responsable' => 'Dirección de Informática',
         'api_salud' => null,
-        'color' => 'iyem-primario',
+        'color' => 'brand-500',
         'orden' => 13,
     ],
 
