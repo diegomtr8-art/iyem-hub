@@ -11,7 +11,8 @@ class RolePermissionSeeder extends Seeder
 {
     /**
      * Permisos que no dependen de un módulo del catálogo, sino de acciones
-     * concretas sobre el padrón. El valor es el módulo al que se atribuyen.
+     * concretas. El valor es el módulo al que se atribuyen; null si valen para
+     * cualquier módulo con tablero.
      */
     private const PERMISOS_DE_ACCION = [
         'crear-padron' => 'padron',
@@ -19,6 +20,12 @@ class RolePermissionSeeder extends Seeder
         'exportar-padron' => 'padron',
         'importar-padron' => 'padron',
         'fusionar-padron' => 'padron',
+        // Tableros de módulos dentro del ERP. Se suman a `ver-{slug}`: poder
+        // ver la tarjeta de un módulo no significa poder ver sus ingresos.
+        'ver-modulo-tablero' => null,
+        // Listas con nombres y contacto de personas de un módulo (miembros en
+        // riesgo, inasistencias). Aparte del tablero, que solo trae conteos.
+        'ver-modulo-datos-personales' => null,
     ];
 
     public function run(): void
@@ -62,12 +69,14 @@ class RolePermissionSeeder extends Seeder
             'ver-indicadores', 'ver-herenciaviva', 'ver-nodico', 'ver-coworkhub',
             'ver-crm', 'ver-padron', 'ver-consultas',
             'crear-padron', 'editar-padron', 'exportar-padron', 'importar-padron',
+            'ver-modulo-tablero',
         ]);
 
         Role::findByName('Supervisor')->syncPermissions([
             'ver-crea', 'ver-impulsate', 'ver-indicadores', 'ver-herenciaviva',
             'ver-padron', 'ver-consultas',
             'exportar-padron',
+            'ver-modulo-tablero',
         ]);
 
         Role::findByName('Operario')->syncPermissions([

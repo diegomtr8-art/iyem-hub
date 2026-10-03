@@ -10,6 +10,7 @@ class Acceso extends Model
     protected $fillable = [
         'user_id',
         'modulo',
+        'detalle',
         'ip_address',
         'accedido_at',
     ];
