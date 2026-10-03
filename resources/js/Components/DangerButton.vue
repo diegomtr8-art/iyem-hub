@@ -1,14 +1,27 @@
 <script setup>
+/**
+ * Botón destructivo: eliminar, fusionar, revertir. Siempre va detrás de una
+ * confirmación que nombra qué se va a borrar.
+ */
 defineProps({
     type: {
         type: String,
         default: 'button',
     },
+    procesando: {
+        type: Boolean,
+        default: false,
+    },
 });
 </script>
 
 <template>
-    <button :type="type" class="inline-flex items-center justify-center rounded-lg border border-transparent bg-red-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white shadow-soft transition duration-150 ease-in-out hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:bg-red-700">
+    <button
+        :type="type"
+        :disabled="procesando || undefined"
+        :aria-busy="procesando ? 'true' : undefined"
+        class="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-transparent bg-danger-fill px-4 text-body-strong text-white transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+    >
         <slot />
     </button>
 </template>
