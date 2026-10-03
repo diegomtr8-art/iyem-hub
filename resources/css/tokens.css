@@ -1,0 +1,210 @@
+/*
+ * Sistema de diseño del IYEM ERP — tokens.
+ *
+ * Única fuente de colores, tipografía, espaciado, radios y sombras. Los
+ * componentes nunca escriben un hex: usan las clases de Tailwind que apuntan
+ * a estas variables (ver tailwind.config.js).
+ *
+ * Los tokens semánticos se redefinen bajo [data-theme="dark"]; la marca, el
+ * espaciado y los radios son iguales en los dos temas. El atributo lo pone
+ * un script en línea de app.blade.php antes de pintar, para que no haya
+ * destello blanco al cargar en tema oscuro.
+ *
+ * Toda pareja texto/fondo de este archivo está verificada contra WCAG AA en
+ * los dos temas. Si agregas un color, verifica su contraste antes.
+ */
+
+/* ------------------------------------------------------------------ *
+ * Tipografía autoalojada
+ *
+ * No se carga de Google: la plataforma no debe depender de un tercero para
+ * pintarse, la PWA tiene que funcionar sin red, y cada petición a un CDN es
+ * un dato de los usuarios saliendo del Instituto.
+ * ------------------------------------------------------------------ */
+
+@font-face {
+    font-family: 'Archivo';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/archivo-latin-600.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Archivo';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/archivo-latin-700.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/inter-latin-400.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/inter-latin-500.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/inter-latin-600.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/inter-latin-700.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/jetbrains-mono-latin-400.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/jetbrains-mono-latin-500.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/jetbrains-mono-latin-600.woff2') format('woff2');
+}
+
+/* ------------------------------------------------------------------ *
+ * Tema claro (y todo lo que no cambia entre temas)
+ * ------------------------------------------------------------------ */
+
+:root {
+    color-scheme: light;
+
+    /* Marca — escala índigo. brand-500 es el color exacto del logotipo,
+       pero no es fondo de botón: con blanco encima da 4.4:1. El primario
+       usa --action (brand-600, 5.8:1). */
+    --brand-50: #f1f2fe;
+    --brand-100: #dde0fd;
+    --brand-200: #bcc1fb;
+    --brand-300: #9fa7f9;
+    --brand-400: #7c87f7;
+    --brand-500: #5b69f5;
+    --brand-600: #4a56d6;
+    --brand-700: #3b45b0;
+    --brand-800: #2e3689;
+    --brand-900: #1f2560;
+
+    /* Superficies */
+    --surface-000: #ffffff;
+    --surface-050: #f6f7fc;
+    --surface-100: #edeff7;
+    --surface-brand: #f1f2fe;
+    --surface-inverse: #171a2b;
+
+    /* Tinta. ink-400 es el piso de contraste (4.6:1): no hay gris más claro. */
+    --ink-900: #171a2b;
+    --ink-600: #4d5370;
+    --ink-400: #6e7490;
+    --ink-inverse: #ffffff;
+
+    /* Bordes. --border decora; --border-strong dibuja controles (3:1). */
+    --border: #d7dae8;
+    --border-strong: #808799;
+
+    /* Acción primaria */
+    --action: #4a56d6;
+    --action-hover: #3b45b0;
+    --action-ink: #ffffff;
+    --focus-ring: #4a56d6;
+
+    /* Estados. El texto de color va sobre el lienzo; sobre *-surface va ink-900. */
+    --success: #146138;
+    --success-surface: #e7f6ee;
+    --warning: #8a5200;
+    --warning-surface: #fff4dd;
+    --danger: #9b211a;
+    --danger-surface: #fdecea;
+    --danger-fill: #b3261e;
+
+    /* Guinda: solo la tarjeta del módulo CREA, para que se reconozca el
+       sistema al que se sale. En ningún otro lugar. */
+    --guinda-700: #6b1938;
+
+    /* Espaciado — escala de 4px. */
+    --space-0-5: 2px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+
+    /* Radios cortos: el logotipo es geométrico y de esquinas rectas. */
+    --radius-none: 0;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+
+    /* Sombras. En oscuro casi no se ven: la jerarquía la carga el borde. */
+    --shadow-sm: 0 1px 2px 0 rgb(23 26 43 / 0.06), 0 1px 3px 0 rgb(23 26 43 / 0.04);
+    --shadow-md: 0 4px 12px -2px rgb(23 26 43 / 0.12), 0 2px 4px -2px rgb(23 26 43 / 0.06);
+    --shadow-lg: 0 16px 40px -8px rgb(23 26 43 / 0.24), 0 4px 8px -4px rgb(23 26 43 / 0.08);
+}
+
+/* ------------------------------------------------------------------ *
+ * Tema oscuro — solo lo que cambia
+ * ------------------------------------------------------------------ */
+
+[data-theme='dark'] {
+    color-scheme: dark;
+
+    --surface-000: #12141f;
+    --surface-050: #1c1f2e;
+    --surface-100: #252938;
+    --surface-brand: #1b1f33;
+    --surface-inverse: #edeff7;
+
+    --ink-900: #edeff7;
+    --ink-600: #a7adc4;
+    --ink-400: #878da6;
+    --ink-inverse: #12141f;
+
+    --border: #313648;
+    --border-strong: #666d83;
+
+    /* En oscuro el primario es índigo claro con tinta oscura encima. */
+    --action: #7c87f7;
+    --action-hover: #9fa7f9;
+    --action-ink: #12141f;
+    --focus-ring: #9fa7f9;
+
+    --success: #4fc98a;
+    --success-surface: #11301f;
+    --warning: #e8a33d;
+    --warning-surface: #33240a;
+    --danger: #f2857c;
+    --danger-surface: #3a1512;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 16px 40px -8px rgb(0 0 0 / 0.6);
+}

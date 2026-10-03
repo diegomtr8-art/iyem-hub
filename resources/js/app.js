@@ -18,9 +18,9 @@ createInertiaApp({
             .mount(el);
     },
     progress: {
-        // Guinda institucional. La barra de progreso venía en el gris por
-        // omisión de Jetstream, ajeno a la identidad del instituto.
-        color: '#9F2241',
+        // Índigo del logotipo IYEM ERP (brand-500). Va escrito aquí porque
+        // Inertia pinta la barra antes de que cargue cualquier componente.
+        color: '#5b69f5',
     },
 });
 

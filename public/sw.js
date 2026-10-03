@@ -1,5 +1,5 @@
 /*
- * Service worker del IYEM Hub.
+ * Service worker del IYEM ERP.
  *
  * Deliberadamente conservador: solo cachea assets con huella de contenido
  * (`/build/...`, que Vite renombra en cada compilación) y los iconos.
@@ -10,7 +10,7 @@
  * viva una sesión ya cerrada. El ahorro no vale ese riesgo.
  */
 
-const VERSION = 'iyem-hub-v1';
+const VERSION = 'iyem-erp-v2';
 const CACHE_ASSETS = `${VERSION}-assets`;
 
 /** Recursos que valen la pena tener listos desde la instalación. */
@@ -19,6 +19,12 @@ const PRECARGA = [
     '/icono-512.png',
     '/icono-maskable-512.png',
     '/apple-touch-icon.png',
+    // Las fuentes del sistema: sin ellas, sin red, la interfaz cae a la
+    // tipografía del sistema operativo.
+    '/fonts/inter-latin-400.woff2',
+    '/fonts/inter-latin-600.woff2',
+    '/fonts/archivo-latin-700.woff2',
+    '/fonts/jetbrains-mono-latin-500.woff2',
 ];
 
 self.addEventListener('install', (evento) => {
