@@ -141,13 +141,13 @@ defineExpose({ abrir });
         <!-- Disparador visible en el encabezado -->
         <button
             type="button"
-            class="toque-minimo flex items-center gap-2 rounded-lg border border-iyem-200 bg-white px-3 text-sm text-gray-400 transition hover:border-iyem-300 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
+            class="toque-minimo flex items-center gap-2 rounded-md border border-line-strong bg-surface px-3 text-small text-ink-600 transition-colors hover:bg-surface-100 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 lg:min-w-[220px]"
             aria-label="Buscar en el padrón"
             @click="abrir"
         >
             <IconoNav icono="buscar" class="h-4 w-4" />
-            <span class="hidden sm:inline">Buscar…</span>
-            <kbd class="hidden rounded border border-iyem-200 bg-iyem-50 px-1.5 py-0.5 font-sans text-[0.65rem] font-semibold text-gray-500 md:inline">
+            <span class="hidden sm:inline">Buscar personas…</span>
+            <kbd class="ml-auto hidden rounded-sm border border-line bg-surface-50 px-1.5 py-0.5 font-mono text-caption text-ink-600 md:inline">
                 {{ atajo }}
             </kbd>
         </button>
@@ -155,8 +155,9 @@ defineExpose({ abrir });
         <Modal :show="abierto" max-width="2xl" @close="cerrar">
             <div class="flex flex-col">
                 <!-- Campo de búsqueda -->
-                <div class="flex items-center gap-3 border-b border-iyem-100 px-4 py-3">
-                    <IconoNav icono="buscar" class="h-5 w-5 shrink-0 text-gray-400" />
+                <!-- El anillo de foco va en el contenedor: el campo ocupa toda la barra. -->
+                <div class="flex items-center gap-3 border-b border-line px-4 py-3 focus-within:ring-2 focus-within:ring-inset focus-within:ring-focus">
+                    <IconoNav icono="buscar" class="h-5 w-5 shrink-0 text-ink-600" />
                     <input
                         ref="campo"
                         v-model="termino"
@@ -167,13 +168,13 @@ defineExpose({ abrir });
                         spellcheck="false"
                         placeholder="Nombre, CURP, RFC, correo o teléfono…"
                         aria-label="Buscar personas en el padrón"
-                        class="w-full border-0 p-0 text-base text-gray-800 placeholder-gray-400 focus:ring-0"
+                        class="h-10 w-full border-0 bg-transparent p-0 text-body text-ink placeholder:text-ink-400 focus:ring-0"
                         @keydown.down.prevent="mover(1)"
                         @keydown.up.prevent="mover(-1)"
                         @keydown.enter.prevent="abrirActivo"
                         @keydown.esc.prevent="cerrar"
                     >
-                    <kbd class="hidden shrink-0 rounded border border-iyem-200 bg-iyem-50 px-1.5 py-0.5 font-sans text-[0.65rem] font-semibold text-gray-400 sm:inline">
+                    <kbd class="hidden shrink-0 rounded-sm border border-line bg-surface-50 px-1.5 py-0.5 font-mono text-caption text-ink-600 sm:inline">
                         esc
                     </kbd>
                 </div>
@@ -183,47 +184,47 @@ defineExpose({ abrir });
                     <!-- Esqueletos mientras responde -->
                     <div v-if="buscando" class="space-y-2 p-4" aria-live="polite">
                         <div v-for="n in 3" :key="n" class="flex animate-pulse items-center gap-3">
-                            <div class="h-9 w-9 shrink-0 rounded-lg bg-iyem-100" />
+                            <div class="h-9 w-9 shrink-0 rounded-md bg-surface-100" />
                             <div class="flex-1 space-y-1.5">
-                                <div class="h-3 w-2/5 rounded bg-iyem-100" />
-                                <div class="h-2.5 w-3/5 rounded bg-iyem-50" />
+                                <div class="h-3 w-2/5 rounded-sm bg-surface-100" />
+                                <div class="h-2.5 w-3/5 rounded-sm bg-surface-50" />
                             </div>
                         </div>
                     </div>
 
-                    <ul v-else-if="resultados.length" class="divide-y divide-iyem-100">
+                    <ul v-else-if="resultados.length" class="divide-y divide-line">
                         <li v-for="(persona, i) in resultados" :key="persona.id">
                             <button
                                 type="button"
-                                class="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors duration-150"
-                                :class="i === indiceActivo ? 'bg-iyem-50' : 'hover:bg-iyem-50/60'"
+                                class="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus"
+                                :class="i === indiceActivo ? 'bg-surface-brand' : 'hover:bg-surface-100'"
                                 @click="abrirResultado(persona)"
                                 @mouseenter="indiceActivo = i"
                             >
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-iyem-claro text-iyem-primario">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-brand text-action">
                                     <IconoNav icono="user" class="h-4 w-4" />
                                 </div>
 
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <p class="font-medium text-gray-800">
+                                        <p class="text-body-strong text-ink">
                                             {{ persona.nombre_completo }}
                                         </p>
                                         <span
                                             v-if="persona.demo"
-                                            class="rounded-full bg-iyem-dorado/15 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-iyem-alerta"
-                                        >demo</span>
+                                            class="inline-flex h-5 items-center rounded-sm bg-warning-surface px-1.5 text-caption text-ink"
+                                        >Demo</span>
                                         <span
                                             v-if="persona.estado_persona !== 'activa'"
-                                            class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[0.6rem] font-semibold capitalize text-gray-500"
+                                            class="inline-flex h-5 items-center rounded-sm bg-surface-100 px-1.5 text-caption capitalize text-ink-600"
                                         >{{ persona.estado_persona }}</span>
                                     </div>
 
-                                    <p class="mt-0.5 truncate text-xs text-gray-400">
-                                        <span v-if="persona.curp" class="tabular-nums">{{ persona.curp }}</span>
+                                    <p class="mt-0.5 truncate text-small text-ink-600">
+                                        <span v-if="persona.curp" class="font-mono">{{ persona.curp }}</span>
                                         <span v-if="persona.curp && persona.municipio"> · </span>
                                         <span v-if="persona.municipio">{{ persona.municipio }}</span>
-                                        <span v-if="persona.telefono"> · <span class="tabular-nums">{{ persona.telefono }}</span></span>
+                                        <span v-if="persona.telefono"> · <span class="font-mono">{{ persona.telefono }}</span></span>
                                     </p>
 
                                     <!-- Vínculos entre módulos: lo que hace 360° a este buscador -->
@@ -231,50 +232,50 @@ defineExpose({ abrir });
                                         <span
                                             v-for="modulo in persona.modulos"
                                             :key="modulo.slug"
-                                            class="inline-flex items-center gap-1 rounded-full bg-iyem-claro px-1.5 py-0.5 text-[0.65rem] font-medium text-iyem-700"
+                                            class="inline-flex h-6 items-center gap-1 rounded-sm bg-surface-100 px-1.5 text-caption text-ink"
                                             :title="`${modulo.total} registro(s) en ${modulo.nombre}`"
                                         >
-                                            <IconoModulo :icono="modulo.icono" class="h-3 w-3" />
+                                            <IconoModulo :icono="modulo.icono" class="h-3.5 w-3.5 text-ink-600" />
                                             {{ modulo.nombre }}
-                                            <span class="tabular-nums opacity-70">{{ modulo.total }}</span>
+                                            <span class="font-mono text-ink-600">{{ modulo.total }}</span>
                                         </span>
                                     </div>
-                                    <p v-else class="mt-1.5 text-[0.65rem] text-gray-300">
+                                    <p v-else class="mt-1.5 text-caption text-ink-600">
                                         Sin registros en otros módulos
                                     </p>
                                 </div>
 
-                                <IconoNav icono="arrow" class="mt-2 h-4 w-4 shrink-0 text-gray-300" />
+                                <IconoNav icono="arrow" class="mt-2 h-4 w-4 shrink-0 text-ink-400" />
                             </button>
                         </li>
                     </ul>
 
-                    <p v-else-if="termino.trim().length >= MINIMO" class="px-4 py-10 text-center text-sm text-gray-400">
+                    <p v-else-if="termino.trim().length >= MINIMO" class="px-4 py-10 text-center text-body text-ink-600">
                         Nadie coincide con «{{ termino.trim() }}».
                     </p>
 
                     <div v-else class="px-4 py-10 text-center">
-                        <IconoNav icono="buscar" class="mx-auto h-8 w-8 text-iyem-100" />
-                        <p class="mt-2 text-sm text-gray-400">
+                        <IconoNav icono="buscar" class="mx-auto h-8 w-8 text-ink-400" />
+                        <p class="mt-2 text-body text-ink-600">
                             Escribe al menos {{ MINIMO }} caracteres.
                         </p>
-                        <p class="mt-1 text-xs text-gray-300">
+                        <p class="mt-1 text-small text-ink-600">
                             Busca por nombre, CURP, RFC, correo o teléfono.
                         </p>
                     </div>
                 </div>
 
                 <!-- Pie con ayuda de teclado -->
-                <div class="flex items-center justify-between gap-3 border-t border-iyem-100 bg-iyem-50/60 px-4 py-2 text-[0.7rem] text-gray-400">
+                <div class="mt-auto flex items-center justify-between gap-3 border-t border-line bg-surface-50 px-4 py-2 text-caption text-ink-600">
                     <span class="hidden items-center gap-3 sm:flex">
-                        <span><kbd class="font-sans font-semibold">↑ ↓</kbd> moverse</span>
-                        <span><kbd class="font-sans font-semibold">↵</kbd> abrir ficha</span>
-                        <span><kbd class="font-sans font-semibold">esc</kbd> cerrar</span>
+                        <span><kbd class="font-mono">↑ ↓</kbd> moverse</span>
+                        <span><kbd class="font-mono">↵</kbd> abrir ficha</span>
+                        <span><kbd class="font-mono">esc</kbd> cerrar</span>
                     </span>
-                    <span v-if="truncado" class="tabular-nums">
+                    <span v-if="truncado">
                         Mostrando {{ resultados.length }} de {{ total.toLocaleString('es-MX') }} coincidencias
                     </span>
-                    <span v-else-if="total" class="tabular-nums">
+                    <span v-else-if="total">
                         {{ total }} coincidencia{{ total === 1 ? '' : 's' }}
                     </span>
                 </div>
