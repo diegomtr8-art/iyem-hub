@@ -126,12 +126,6 @@ body {
     background: transparent;
 }
 
-/* Patrón de puntos sutil para fondos "tech" (login, encabezados). */
-.patron-puntos {
-    background-image: radial-gradient(currentColor 1px, transparent 1px);
-    background-size: 22px 22px;
-}
-
 /* ------------------------------------------------------------------ *
  * Adaptación a iPhone y iPad
  * ------------------------------------------------------------------ */

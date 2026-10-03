@@ -2,7 +2,13 @@
 import { computed, ref } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Aviso from '@/Components/Aviso.vue';
+import Checkbox from '@/Components/Checkbox.vue';
+import ConfirmationModal from '@/Components/ConfirmationModal.vue';
+import DangerButton from '@/Components/DangerButton.vue';
 import IconoNav from '@/Components/IconoNav.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
+import { fecha, numero } from '@/formato';
 
 const props = defineProps({
     grupos: { type: Array, default: () => [] },
@@ -63,28 +69,76 @@ const fusionar = (grupo, duplicadaId) => {
             grupoAbierto.value = null;
             formFusion.reset();
         },
+        onFinish: () => {
+            confirmacion.value = null;
+        },
     });
 };
 
+const revirtiendo = ref(false);
+
 const revertir = (fusion) => {
-    router.post(route('padron.duplicados.revertir', fusion.id), {}, { preserveScroll: true });
+    revirtiendo.value = true;
+    router.post(route('padron.duplicados.revertir', fusion.id), {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            revirtiendo.value = false;
+            confirmacion.value = null;
+        },
+    });
 };
+
+/* ------------------------------------------------------------------ *
+ * Confirmación
+ *
+ * Fusionar y deshacer mueven trámites entre identidades: la confirmación
+ * nombra a las dos personas, no pregunta "¿estás seguro?".
+ * ------------------------------------------------------------------ */
+
+const confirmacion = ref(null);
+
+const pedirFusion = (grupo, duplicada) => {
+    const principal = grupo.personas.find((p) => p.id === principalElegida.value);
+    confirmacion.value = { tipo: 'fusion', grupo, duplicada, principal };
+};
+
+const pedirReversion = (fusion) => {
+    confirmacion.value = { tipo: 'revertir', fusion };
+};
+
+const confirmar = () => {
+    const c = confirmacion.value;
+    if (!c) return;
+    if (c.tipo === 'fusion') fusionar(c.grupo, c.duplicada.id);
+    else revertir(c.fusion);
+};
+
+const procesandoConfirmacion = computed(() => formFusion.processing || revirtiendo.value);
 
 /* ------------------------------------------------------------------ *
  * Presentación
  * ------------------------------------------------------------------ */
 
-const colorConfianza = (confianza) => ({
-    certeza: 'bg-iyem-error/10 text-iyem-error ring-iyem-error/25',
-    alta: 'bg-iyem-alerta/10 text-iyem-alerta ring-iyem-alerta/25',
-    media: 'bg-iyem-dorado/15 text-iyem-dorado ring-iyem-dorado/30',
-    sospecha: 'bg-sky-500/10 text-sky-700 ring-sky-500/25',
-}[confianza] ?? 'bg-gray-100 text-gray-600 ring-gray-300');
+const CONFIANZA = {
+    certeza: { texto: 'Certeza', fondo: 'bg-danger-surface', icono: 'text-danger' },
+    alta: { texto: 'Confianza alta', fondo: 'bg-warning-surface', icono: 'text-warning' },
+    media: { texto: 'Confianza media', fondo: 'bg-warning-surface', icono: 'text-warning' },
+    sospecha: { texto: 'Sospecha', fondo: 'bg-surface-brand', icono: 'text-action' },
+};
 
-const fecha = (valor) =>
-    valor ? new Date(valor).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+const confianza = (clave) => CONFIANZA[clave] ?? { texto: clave, fondo: 'bg-surface-100', icono: 'text-ink-400' };
+
+const CAMPOS = [
+    { clave: 'curp', etiqueta: 'CURP', mono: true },
+    { clave: 'rfc', etiqueta: 'RFC', mono: true },
+    { clave: 'email', etiqueta: 'Correo', mono: false },
+    { clave: 'telefono', etiqueta: 'Teléfono', mono: true },
+    { clave: 'municipio', etiqueta: 'Municipio', mono: false },
+];
 
 const bloqueados = computed(() => props.resumen.criterios_bloqueados_por_esquema ?? []);
+
+const claseFoco = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2';
 </script>
 
 <template>
@@ -93,280 +147,316 @@ const bloqueados = computed(() => props.resumen.criterios_bloqueados_por_esquema
             <div class="flex min-w-0 items-center gap-2">
                 <Link
                     :href="route('padron.index')"
-                    class="shrink-0 text-gray-400 transition hover:text-iyem-primario"
+                    :class="['toque-minimo -ml-2 flex shrink-0 items-center justify-center rounded-md text-ink-600 transition-colors hover:text-ink', claseFoco]"
                     aria-label="Volver al padrón"
                 >
                     <IconoNav icono="arrow" class="h-5 w-5 rotate-180" />
                 </Link>
-                <span class="truncate">Duplicados</span>
+                <span>Duplicados</span>
             </div>
         </template>
 
-        <!-- Advertencia sobre el alcance real de la detección -->
-        <div
-            v-if="bloqueados.length"
-            class="flex items-start gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
-        >
-            <IconoNav icono="info" class="mt-0.5 h-5 w-5 shrink-0 text-sky-600" />
-            <p>
+        <div class="mx-auto max-w-6xl space-y-6">
+            <div>
+                <h1 class="text-display-lg text-ink">Duplicados del padrón</h1>
+                <p class="mt-1 text-body text-ink-600">
+                    Fichas que probablemente son la misma persona. Al fusionarlas, sus trámites quedan bajo una sola identidad.
+                </p>
+            </div>
+
+            <!-- Advertencia sobre el alcance real de la detección -->
+            <Aviso v-if="bloqueados.length" tipo="info">
                 La base impide por diseño que se repitan
                 <strong>{{ bloqueados.join(' y ') }}</strong>: esas columnas tienen restricción de unicidad.
                 Que no aparezcan duplicados por ahí no es un logro de calidad del padrón, es la
                 restricción haciendo su trabajo. Los duplicados reales entran por RFC, por teléfono
                 y por nombre mal capturado.
-            </p>
-        </div>
+            </Aviso>
 
-        <!-- Resumen -->
-        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft">
-                <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                    Grupos por revisar
-                </p>
-                <p class="mt-1 text-2xl font-bold tabular-nums text-iyem-700">
-                    {{ (resumen.grupos ?? 0).toLocaleString('es-MX') }}
-                </p>
-            </div>
-            <div class="rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft">
-                <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                    Personas involucradas
-                </p>
-                <p class="mt-1 text-2xl font-bold tabular-nums text-iyem-700">
-                    {{ (resumen.personas_involucradas ?? 0).toLocaleString('es-MX') }}
-                </p>
-            </div>
-            <div class="rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft sm:col-span-2">
-                <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                    Sospechas por nombre parecido
-                </p>
-                <label class="mt-2 inline-flex cursor-pointer items-center gap-2 text-sm text-gray-600">
-                    <input
-                        type="checkbox"
-                        :checked="incluyeSimilitud"
-                        class="rounded border-gray-300 text-iyem-primario focus:ring-iyem-secundario"
-                        @change="alternarSimilitud"
+            <!-- Resumen -->
+            <section aria-label="Resumen" class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+                <div class="rounded-lg border border-line bg-surface p-5 shadow-sm">
+                    <p class="text-overline text-ink-600">Grupos por revisar</p>
+                    <p class="mt-2 text-number-display text-ink">{{ numero(resumen.grupos ?? 0) }}</p>
+                </div>
+                <div class="rounded-lg border border-line bg-surface p-5 shadow-sm">
+                    <p class="text-overline text-ink-600">Personas involucradas</p>
+                    <p class="mt-2 text-number-display text-ink">{{ numero(resumen.personas_involucradas ?? 0) }}</p>
+                </div>
+                <div class="col-span-2 rounded-lg border border-line bg-surface p-5 shadow-sm">
+                    <p class="text-overline text-ink-600">Sospechas por nombre parecido</p>
+                    <label class="mt-3 inline-flex min-h-[44px] cursor-pointer items-center gap-3 text-body text-ink">
+                        <Checkbox :checked="incluyeSimilitud" @change="alternarSimilitud" />
+                        Incluirlas (umbral <span class="font-mono">{{ umbralSimilitud }} %</span>)
+                    </label>
+                </div>
+            </section>
+
+            <!-- Pestañas -->
+            <div>
+                <div class="flex gap-1 overflow-x-auto border-b border-line" role="tablist" aria-label="Duplicados">
+                    <button
+                        v-for="opcion in [
+                            { clave: 'pendientes', texto: 'Por revisar', total: grupos.length },
+                            { clave: 'historial', texto: 'Fusiones hechas', total: fusionesRecientes.length },
+                        ]"
+                        :id="`pestana-${opcion.clave}`"
+                        :key="opcion.clave"
+                        type="button"
+                        role="tab"
+                        :aria-controls="`panel-${opcion.clave}`"
+                        class="min-h-[44px] shrink-0 border-b-2 px-4 text-body font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus"
+                        :class="pestana === opcion.clave ? 'border-action text-ink' : 'border-transparent text-ink-600 hover:text-ink'"
+                        :aria-selected="pestana === opcion.clave ? 'true' : 'false'"
+                        @click="pestana = opcion.clave"
                     >
-                    Incluirlas (umbral {{ umbralSimilitud }} %)
-                </label>
-            </div>
-        </div>
+                        {{ opcion.texto }} <span class="font-mono text-ink-600">{{ opcion.total }}</span>
+                    </button>
+                </div>
 
-        <!-- Pestañas -->
-        <div class="mt-6 flex gap-1 border-b border-iyem-200" role="tablist">
-            <button
-                v-for="opcion in [
-                    { clave: 'pendientes', texto: `Por revisar (${grupos.length})` },
-                    { clave: 'historial', texto: `Fusiones hechas (${fusionesRecientes.length})` },
-                ]"
-                :key="opcion.clave"
-                type="button"
-                role="tab"
-                class="min-h-[44px] border-b-2 px-3.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-iyem-secundario"
-                :class="pestana === opcion.clave
-                    ? 'border-iyem-secundario text-iyem-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'"
-                :aria-selected="pestana === opcion.clave"
-                @click="pestana = opcion.clave"
-            >
-                {{ opcion.texto }}
-            </button>
-        </div>
-
-        <!-- ============================================================
-             Grupos por revisar
-             ============================================================ -->
-        <section v-show="pestana === 'pendientes'" class="mt-5 space-y-3">
-            <article
-                v-for="(grupo, i) in grupos"
-                :key="i"
-                class="overflow-hidden rounded-2xl border border-iyem-200 bg-white shadow-soft"
-            >
-                <button
-                    type="button"
-                    class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-iyem-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-iyem-secundario"
-                    :aria-expanded="grupoAbierto === i"
-                    @click="abrirGrupo(i, grupo)"
+                <!-- ============================================================
+                     Grupos por revisar
+                     ============================================================ -->
+                <section
+                    v-show="pestana === 'pendientes'"
+                    id="panel-pendientes"
+                    role="tabpanel"
+                    aria-labelledby="pestana-pendientes"
+                    class="mt-5 space-y-4"
                 >
-                    <IconoNav icono="duplicados" class="h-5 w-5 shrink-0 text-iyem-primario" />
-
-                    <div class="min-w-0 flex-1">
-                        <p class="truncate font-medium text-gray-800">
-                            {{ grupo.personas.map((p) => p.nombre_completo).join('  ·  ') }}
-                        </p>
-                        <p class="mt-0.5 truncate text-xs text-gray-400">
-                            {{ grupo.etiqueta }}<span v-if="grupo.valor">: {{ grupo.valor }}</span>
-                        </p>
-                    </div>
-
-                    <span
-                        class="shrink-0 rounded-full px-2 py-0.5 text-[0.7rem] font-semibold capitalize ring-1 ring-inset"
-                        :class="colorConfianza(grupo.confianza)"
+                    <article
+                        v-for="(grupo, i) in grupos"
+                        :key="i"
+                        class="overflow-hidden rounded-lg border border-line bg-surface shadow-sm"
                     >
-                        {{ grupo.confianza }}
-                    </span>
-
-                    <IconoNav
-                        icono="chevron"
-                        class="h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200"
-                        :class="grupoAbierto === i ? 'rotate-180' : ''"
-                    />
-                </button>
-
-                <div v-show="grupoAbierto === i" class="border-t border-iyem-100 p-4">
-                    <p class="text-sm text-gray-500">
-                        Elige qué ficha sobrevive. La otra se archiva y sus trámites, etiquetas e
-                        historial pasan a la ficha elegida.
-                        <strong class="text-gray-700">Se puede deshacer durante {{ diasParaRevertir }} días.</strong>
-                    </p>
-
-                    <div class="mt-4 grid gap-3 lg:grid-cols-2">
-                        <div
-                            v-for="persona in grupo.personas"
-                            :key="persona.id"
-                            class="rounded-xl border p-3 transition-colors duration-200"
-                            :class="principalElegida === persona.id
-                                ? 'border-iyem-400 bg-iyem-50'
-                                : 'border-iyem-200'"
+                        <button
+                            type="button"
+                            class="flex min-h-[44px] w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus"
+                            :aria-expanded="grupoAbierto === i ? 'true' : 'false'"
+                            :aria-controls="`grupo-${i}`"
+                            @click="abrirGrupo(i, grupo)"
                         >
-                            <label class="flex cursor-pointer items-start gap-2">
-                                <input
-                                    v-model="principalElegida"
-                                    type="radio"
-                                    :value="persona.id"
-                                    :name="`principal-${i}`"
-                                    class="mt-1 border-gray-300 text-iyem-primario focus:ring-iyem-secundario"
-                                >
-                                <span class="min-w-0 flex-1">
-                                    <span class="block font-medium text-gray-800">{{ persona.nombre_completo }}</span>
-                                    <span class="mt-0.5 block text-xs text-gray-400">
-                                        ID {{ persona.id }} · alta {{ fecha(persona.alta) }} ·
-                                        origen {{ persona.creado_por_modulo || '—' }}
-                                    </span>
-                                </span>
-                            </label>
+                            <IconoNav icono="duplicados" class="h-5 w-5 shrink-0 text-action" />
 
-                            <dl class="mt-3 space-y-1 text-xs">
-                                <div v-for="campo in ['curp', 'rfc', 'email', 'telefono', 'municipio']" :key="campo" class="flex gap-2">
-                                    <dt class="w-20 shrink-0 uppercase text-gray-400">
-                                        {{ campo }}
-                                    </dt>
-                                    <dd class="min-w-0 break-all text-gray-600">
-                                        {{ persona[campo] || '—' }}
-                                    </dd>
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-body-strong text-ink">
+                                    {{ grupo.personas.map((p) => p.nombre_completo).join(' · ') }}
+                                </p>
+                                <p class="mt-0.5 truncate text-small text-ink-600">
+                                    {{ grupo.etiqueta }}<span v-if="grupo.valor">: <span class="font-mono">{{ grupo.valor }}</span></span>
+                                </p>
+                            </div>
+
+                            <span class="inline-flex h-6 shrink-0 items-center gap-1 rounded-sm px-2 text-caption text-ink" :class="confianza(grupo.confianza).fondo">
+                                <IconoNav icono="alerta" class="h-3.5 w-3.5" :class="confianza(grupo.confianza).icono" />
+                                {{ confianza(grupo.confianza).texto }}
+                            </span>
+
+                            <IconoNav
+                                icono="chevron"
+                                class="h-4 w-4 shrink-0 text-ink-600 transition-transform"
+                                :class="grupoAbierto === i ? 'rotate-180' : ''"
+                            />
+                        </button>
+
+                        <div v-show="grupoAbierto === i" :id="`grupo-${i}`" class="border-t border-line p-4 sm:p-5">
+                            <p class="text-small text-ink-600">
+                                Elige qué ficha sobrevive. La otra se archiva y sus trámites, etiquetas e
+                                historial pasan a la ficha elegida.
+                                <strong class="text-ink">Se puede deshacer durante {{ diasParaRevertir }} días.</strong>
+                            </p>
+
+                            <fieldset class="mt-4">
+                                <legend class="sr-only">Ficha que sobrevive</legend>
+                                <div class="grid gap-4 lg:grid-cols-2">
+                                    <div
+                                        v-for="persona in grupo.personas"
+                                        :key="persona.id"
+                                        class="rounded-md border p-4 transition-colors"
+                                        :class="principalElegida === persona.id ? 'border-action bg-surface-brand' : 'border-line'"
+                                    >
+                                        <label class="flex cursor-pointer items-start gap-3">
+                                            <input
+                                                v-model="principalElegida"
+                                                type="radio"
+                                                :value="persona.id"
+                                                :name="`principal-${i}`"
+                                                class="mt-1 h-4 w-4 border-line-strong bg-surface text-action focus:ring-2 focus:ring-focus focus:ring-offset-2"
+                                            >
+                                            <span class="min-w-0 flex-1">
+                                                <span class="block text-body-strong text-ink">{{ persona.nombre_completo }}</span>
+                                                <span class="mt-0.5 block text-small text-ink-600">
+                                                    ID <span class="font-mono">{{ persona.id }}</span> · alta <span class="font-mono">{{ fecha(persona.alta) }}</span> ·
+                                                    origen {{ persona.creado_por_modulo || '—' }}
+                                                </span>
+                                                <span v-if="principalElegida === persona.id" class="mt-1 block text-caption text-action">Esta ficha sobrevive</span>
+                                            </span>
+                                        </label>
+
+                                        <dl class="mt-3 space-y-1 text-small">
+                                            <div v-for="campo in CAMPOS" :key="campo.clave" class="flex gap-2">
+                                                <dt class="w-20 shrink-0 text-ink-600">{{ campo.etiqueta }}</dt>
+                                                <dd class="min-w-0 break-all text-ink" :class="campo.mono ? 'font-mono' : ''">
+                                                    {{ persona[campo.clave] || '—' }}
+                                                </dd>
+                                            </div>
+                                        </dl>
+
+                                        <div class="mt-4 flex flex-wrap items-center gap-3">
+                                            <Link
+                                                :href="persona.url"
+                                                :class="['inline-flex min-h-[44px] items-center gap-1 rounded-sm text-small font-medium text-action hover:underline', claseFoco]"
+                                            >
+                                                Ver ficha
+                                                <IconoNav icono="arrow" class="h-4 w-4" />
+                                            </Link>
+
+                                            <DangerButton
+                                                v-if="principalElegida !== persona.id"
+                                                class="ml-auto"
+                                                :procesando="formFusion.processing"
+                                                @click="pedirFusion(grupo, persona)"
+                                            >
+                                                <IconoNav icono="duplicados" class="h-4 w-4" />
+                                                Fusionar en la elegida
+                                            </DangerButton>
+                                        </div>
+                                    </div>
                                 </div>
-                            </dl>
+                            </fieldset>
 
-                            <div class="mt-3 flex flex-wrap gap-2">
-                                <Link
-                                    :href="persona.url"
-                                    class="inline-flex items-center gap-1 text-xs font-medium text-iyem-700 hover:underline"
+                            <div class="mt-5">
+                                <label :for="`motivo-${i}`" class="block text-body-strong text-ink">Motivo</label>
+                                <input
+                                    :id="`motivo-${i}`"
+                                    v-model="formFusion.motivo"
+                                    type="text"
+                                    maxlength="500"
+                                    :aria-describedby="`motivo-${i}-ayuda`"
+                                    class="mt-1.5 h-10 w-full rounded-md border-line-strong bg-surface px-3 text-body text-ink focus:border-focus focus:ring-2 focus:ring-focus focus:ring-offset-2"
                                 >
-                                    Ver ficha
-                                    <IconoNav icono="arrow" class="h-3 w-3" />
-                                </Link>
-
-                                <button
-                                    v-if="principalElegida !== persona.id"
-                                    type="button"
-                                    :disabled="formFusion.processing"
-                                    class="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-iyem-error/10 px-2.5 py-1.5 text-xs font-semibold text-iyem-error transition hover:bg-iyem-error/15 disabled:opacity-50"
-                                    @click="fusionar(grupo, persona.id)"
-                                >
-                                    <IconoNav icono="duplicados" class="h-3.5 w-3.5" />
-                                    Fusionar dentro de la elegida
-                                </button>
+                                <p :id="`motivo-${i}-ayuda`" class="mt-1.5 text-small text-ink-600">
+                                    Queda en la bitácora. Por ejemplo: se confirmó por teléfono que es la misma persona.
+                                </p>
                             </div>
                         </div>
-                    </div>
+                    </article>
 
-                    <div class="mt-4">
-                        <label :for="`motivo-${i}`" class="block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Motivo (queda en la bitácora)
-                        </label>
-                        <input
-                            :id="`motivo-${i}`"
-                            v-model="formFusion.motivo"
-                            type="text"
-                            maxlength="500"
-                            placeholder="Ej.: se confirmó por teléfono que es la misma persona"
-                            class="mt-1 h-11 w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-iyem-secundario focus:ring-iyem-secundario"
+                    <Aviso v-if="truncado" tipo="info">
+                        Se muestran los primeros 100 grupos. Para el listado completo corre
+                        <code class="rounded-sm bg-surface px-1.5 py-0.5 text-code">php artisan padron:duplicados --csv=reporte.csv</code>.
+                    </Aviso>
+
+                    <div v-if="!grupos.length" class="rounded-lg border border-line bg-surface p-6">
+                        <p class="text-body-strong text-ink">No hay duplicados por revisar.</p>
+                        <p class="mt-1 text-small text-ink-600">
+                            {{ incluyeSimilitud
+                                ? 'Ni por datos repetidos ni por nombres parecidos.'
+                                : 'Activa las sospechas por nombre parecido para buscar con un criterio más amplio.' }}
+                        </p>
+                    </div>
+                </section>
+
+                <!-- ============================================================
+                     Historial de fusiones
+                     ============================================================ -->
+                <section
+                    v-show="pestana === 'historial'"
+                    id="panel-historial"
+                    role="tabpanel"
+                    aria-labelledby="pestana-historial"
+                    class="mt-5"
+                >
+                    <ul v-if="fusionesRecientes.length" class="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface shadow-sm">
+                        <li
+                            v-for="fusion in fusionesRecientes"
+                            :key="fusion.id"
+                            class="flex flex-wrap items-start justify-between gap-3 p-4 sm:p-5"
+                            :class="fusion.revertida_at ? 'bg-surface-50' : ''"
                         >
+                            <div class="min-w-0">
+                                <p class="text-body-strong text-ink">
+                                    <span class="text-ink-600 line-through">{{ fusion.duplicada }}</span>
+                                    <span class="mx-1.5 text-ink-600" aria-hidden="true">→</span>
+                                    <span class="sr-only">se fusionó en</span>
+                                    <Link :href="route('padron.show', fusion.principal_id)" :class="['rounded-sm text-action hover:underline', claseFoco]">
+                                        {{ fusion.principal }}
+                                    </Link>
+                                </p>
+                                <p class="mt-1 text-small text-ink-600">
+                                    {{ fusion.usuario }} · <span class="font-mono">{{ fecha(fusion.fecha) }}</span>
+                                    <span v-if="fusion.criterio"> · criterio: {{ fusion.criterio }}</span>
+                                </p>
+                                <p v-if="fusion.motivo" class="mt-1 text-small text-ink">«{{ fusion.motivo }}»</p>
+                                <p v-if="Object.keys(fusion.vinculos_movidos).length" class="mt-1.5 text-small text-ink-600">
+                                    Movidos:
+                                    <span v-for="(total, tabla) in fusion.vinculos_movidos" :key="tabla" class="mr-2">
+                                        {{ tabla.replace(/_/g, ' ') }} (<span class="font-mono">{{ total }}</span>)
+                                    </span>
+                                </p>
+                            </div>
+
+                            <div class="shrink-0 text-left sm:text-right">
+                                <p v-if="fusion.revertida_at" class="inline-flex h-6 items-center rounded-sm bg-surface-100 px-2 text-caption text-ink">
+                                    Revertida el <span class="ml-1 font-mono">{{ fecha(fusion.revertida_at) }}</span>
+                                </p>
+                                <template v-else>
+                                    <SecondaryButton v-if="fusion.es_revertible" @click="pedirReversion(fusion)">
+                                        <IconoNav icono="historial" class="h-4 w-4" />
+                                        Deshacer fusión
+                                    </SecondaryButton>
+                                    <p class="mt-1 text-caption text-ink-600">
+                                        <template v-if="fusion.es_revertible">
+                                            Se puede deshacer hasta el <span class="font-mono">{{ fecha(fusion.revertible_hasta) }}</span>
+                                        </template>
+                                        <template v-else>La ventana para deshacer ya cerró</template>
+                                    </p>
+                                </template>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <div v-else class="rounded-lg border border-line bg-surface p-6">
+                        <p class="text-body-strong text-ink">Todavía no se ha fusionado ninguna ficha.</p>
+                        <p class="mt-1 text-small text-ink-600">Las fusiones que hagas desde «Por revisar» aparecerán aquí y se podrán deshacer durante {{ diasParaRevertir }} días.</p>
                     </div>
-                </div>
-            </article>
+                </section>
+            </div>
+        </div>
 
-            <p v-if="truncado" class="rounded-2xl border border-dashed border-iyem-200 px-4 py-3 text-center text-sm text-gray-500">
-                Se muestran los primeros 100 grupos. Corre
-                <code class="rounded bg-iyem-50 px-1.5 py-0.5 text-xs">php artisan padron:duplicados --csv=reporte.csv</code>
-                para el listado completo.
-            </p>
+        <!-- Confirmación: nombra a las personas involucradas -->
+        <ConfirmationModal :show="confirmacion !== null" @close="confirmacion = null">
+            <template #title>
+                <template v-if="confirmacion?.tipo === 'fusion'">Fusionar a {{ confirmacion.duplicada.nombre_completo }}</template>
+                <template v-else-if="confirmacion?.tipo === 'revertir'">Deshacer la fusión de {{ confirmacion.fusion.duplicada }}</template>
+            </template>
 
-            <p v-if="!grupos.length" class="rounded-2xl border border-dashed border-iyem-200 px-4 py-10 text-center text-sm text-gray-500">
-                No hay duplicados por revisar.
-            </p>
-        </section>
+            <template #content>
+                <template v-if="confirmacion?.tipo === 'fusion'">
+                    <p>
+                        La ficha de <strong class="text-ink">{{ confirmacion.duplicada.nombre_completo }}</strong>
+                        (ID <span class="font-mono">{{ confirmacion.duplicada.id }}</span>) se archivará y sus trámites, etiquetas e
+                        historial pasarán a <strong class="text-ink">{{ confirmacion.principal?.nombre_completo }}</strong>
+                        (ID <span class="font-mono">{{ confirmacion.principal?.id }}</span>).
+                    </p>
+                    <p class="mt-2">Podrás deshacerlo durante {{ diasParaRevertir }} días.</p>
+                    <p v-if="!formFusion.motivo" class="mt-2 text-small">No escribiste motivo; la fusión quedará en la bitácora sin explicación.</p>
+                </template>
+                <template v-else-if="confirmacion?.tipo === 'revertir'">
+                    <p>
+                        <strong class="text-ink">{{ confirmacion.fusion.duplicada }}</strong> volverá a ser una ficha independiente y los
+                        vínculos que se movieron a <strong class="text-ink">{{ confirmacion.fusion.principal }}</strong> regresarán a ella.
+                    </p>
+                </template>
+            </template>
 
-        <!-- ============================================================
-             Historial de fusiones
-             ============================================================ -->
-        <section v-show="pestana === 'historial'" class="mt-5 space-y-3">
-            <article
-                v-for="fusion in fusionesRecientes"
-                :key="fusion.id"
-                class="rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft"
-                :class="fusion.revertida_at ? 'opacity-60' : ''"
-            >
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <p class="font-medium text-gray-800">
-                            <span class="text-gray-400 line-through">{{ fusion.duplicada }}</span>
-                            <span class="mx-1.5 text-gray-300">→</span>
-                            <Link :href="route('padron.show', fusion.principal_id)" class="hover:underline">
-                                {{ fusion.principal }}
-                            </Link>
-                        </p>
-                        <p class="mt-1 text-xs text-gray-400">
-                            {{ fusion.usuario }} · {{ fecha(fusion.fecha) }}
-                            <span v-if="fusion.criterio"> · criterio: {{ fusion.criterio }}</span>
-                        </p>
-                        <p v-if="fusion.motivo" class="mt-1 text-sm text-gray-600">
-                            «{{ fusion.motivo }}»
-                        </p>
-                        <p v-if="Object.keys(fusion.vinculos_movidos).length" class="mt-1.5 text-xs text-gray-400">
-                            Movidos:
-                            <span v-for="(total, tabla) in fusion.vinculos_movidos" :key="tabla" class="mr-2">
-                                {{ tabla.replace(/_/g, ' ') }} ({{ total }})
-                            </span>
-                        </p>
-                    </div>
-
-                    <div class="shrink-0 text-right">
-                        <p v-if="fusion.revertida_at" class="text-xs font-semibold text-gray-500">
-                            Revertida el {{ fecha(fusion.revertida_at) }}
-                        </p>
-                        <template v-else>
-                            <button
-                                v-if="fusion.es_revertible"
-                                type="button"
-                                class="toque-minimo inline-flex items-center gap-1.5 rounded-lg border border-iyem-200 px-3 text-xs font-semibold text-gray-600 transition hover:bg-iyem-50"
-                                @click="revertir(fusion)"
-                            >
-                                <IconoNav icono="historial" class="h-3.5 w-3.5" />
-                                Deshacer
-                            </button>
-                            <p class="mt-1 text-[0.7rem] text-gray-400">
-                                {{ fusion.es_revertible
-                                    ? `Se puede deshacer hasta el ${fecha(fusion.revertible_hasta)}`
-                                    : 'La ventana para deshacer ya cerró' }}
-                            </p>
-                        </template>
-                    </div>
-                </div>
-            </article>
-
-            <p v-if="!fusionesRecientes.length" class="rounded-2xl border border-dashed border-iyem-200 px-4 py-10 text-center text-sm text-gray-500">
-                Todavía no se ha fusionado ninguna ficha.
-            </p>
-        </section>
+            <template #footer>
+                <SecondaryButton @click="confirmacion = null">Cancelar</SecondaryButton>
+                <DangerButton :procesando="procesandoConfirmacion" @click="confirmar">
+                    <template v-if="confirmacion?.tipo === 'fusion'">{{ formFusion.processing ? 'Fusionando…' : 'Fusionar fichas' }}</template>
+                    <template v-else>{{ revirtiendo ? 'Deshaciendo…' : 'Deshacer fusión' }}</template>
+                </DangerButton>
+            </template>
+        </ConfirmationModal>
     </AppLayout>
 </template>

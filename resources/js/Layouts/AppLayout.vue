@@ -31,6 +31,20 @@ const logout = () => {
 
 const esActivo = (nombreRuta) => route().current(nombreRuta) || route().current(`${nombreRuta}.*`);
 
+// Un módulo interno del sidebar (p. ej. /padron) está activo cuando la URL
+// actual cae bajo su ruta. Los externos pasan por dashboard.acceder y nunca
+// son la página actual.
+const moduloActivo = (modulo) => {
+    try {
+        const ruta = new URL(modulo.url, window.location.origin);
+        if (ruta.origin !== window.location.origin || ruta.pathname.startsWith('/dashboard')) return false;
+        const actual = page.url.split('?')[0];
+        return actual === ruta.pathname || actual.startsWith(`${ruta.pathname}/`);
+    } catch {
+        return false;
+    }
+};
+
 const iniciales = () => {
     const n = user().name?.[0] ?? '';
     const a = user().apellido?.[0] ?? '';
@@ -104,6 +118,14 @@ const claseItem = (activo) => [
 <template>
     <div class="min-h-screen bg-surface-50">
         <Head :title="title" />
+
+        <!-- Primer elemento con Tab: evita recorrer todo el menú en cada página. -->
+        <a
+            href="#contenido"
+            class="sr-only z-50 rounded-md bg-action px-4 py-2 text-body-strong text-action-ink focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
+        >
+            Saltar al contenido
+        </a>
 
         <!-- Telón del cajón en móvil -->
         <div
@@ -192,7 +214,8 @@ const claseItem = (activo) => [
                             v-for="modulo in page.props.modulosSidebar"
                             :key="modulo.slug"
                             :href="modulo.url"
-                            :class="claseItem(false)"
+                            :class="claseItem(moduloActivo(modulo))"
+                            :aria-current="moduloActivo(modulo) ? 'page' : undefined"
                         >
                             <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-300" aria-hidden="true" />
                             {{ modulo.nombre }}
@@ -302,7 +325,7 @@ const claseItem = (activo) => [
                  de navegación fija más el área segura del iPhone. El área
                  segura lateral va aquí y el gutter en el hijo, para que las dos
                  reglas de padding no se pisen. -->
-            <main class="pad-seguro-lados espacio-barra-inferior sm:pb-0">
+            <main id="contenido" tabindex="-1" class="pad-seguro-lados espacio-barra-inferior focus:outline-none sm:pb-0">
                 <div class="p-4 sm:p-6 lg:p-8">
                     <slot />
                 </div>

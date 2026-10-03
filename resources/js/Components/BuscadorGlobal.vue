@@ -138,10 +138,11 @@ defineExpose({ abrir });
 
 <template>
     <div v-if="disponible">
-        <!-- Disparador visible en el encabezado -->
+        <!-- Disparador visible en el encabezado. En teléfono se oculta: la
+             búsqueda está en la barra de navegación inferior. -->
         <button
             type="button"
-            class="toque-minimo flex items-center gap-2 rounded-md border border-line-strong bg-surface px-3 text-small text-ink-600 transition-colors hover:bg-surface-100 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 lg:min-w-[220px]"
+            class="toque-minimo hidden items-center gap-2 rounded-md border border-line-strong bg-surface px-3 text-small text-ink-600 sm:flex transition-colors hover:bg-surface-100 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 lg:min-w-[220px]"
             aria-label="Buscar en el padrón"
             @click="abrir"
         >

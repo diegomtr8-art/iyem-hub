@@ -112,38 +112,6 @@ export default {
                     surface: 'var(--danger-surface)',
                     fill: 'var(--danger-fill)',
                 },
-
-                // TRANSITORIO. Alias de la paleta guinda anterior, re-apuntados
-                // al índigo para que las pantallas aún no migradas no queden
-                // sin color. Se borran cuando
-                // `grep -r "iyem-\|tinta-" resources/js` no devuelva nada.
-                iyem: {
-                    50: '#F1F2FE',
-                    100: '#DDE0FD',
-                    200: '#BCC1FB',
-                    300: '#9FA7F9',
-                    400: '#7C87F7',
-                    500: '#5B69F5',
-                    600: '#4A56D6',
-                    700: '#3B45B0',
-                    800: '#2E3689',
-                    900: '#1F2560',
-                    950: '#161A45',
-                    primario: '#3B45B0',
-                    secundario: '#4A56D6',
-                    claro: '#F1F2FE',
-                    neutro: '#F6F7FC',
-                    dorado: '#8A5200',
-                    exito: '#146138',
-                    alerta: '#8A5200',
-                    error: '#9B211A',
-                },
-                tinta: {
-                    700: '#2E3689',
-                    800: '#1F2560',
-                    900: '#1F2560',
-                    950: '#161A45',
-                },
             },
             borderRadius: {
                 none: '0',
@@ -159,18 +127,6 @@ export default {
                 DEFAULT: 'var(--shadow-sm)',
                 md: 'var(--shadow-md)',
                 lg: 'var(--shadow-lg)',
-                // TRANSITORIO: alias de las sombras anteriores, se borran con iyem-*.
-                soft: 'var(--shadow-sm)',
-                'soft-lg': 'var(--shadow-md)',
-                glow: 'none',
-            },
-            // TRANSITORIO: los degradados anteriores quedan como color plano
-            // para que los botones y paneles aún no migrados no se queden sin
-            // fondo. El sistema no tiene degradados; se borran con iyem-*.
-            backgroundImage: {
-                'iyem-gradient': 'linear-gradient(#3B45B0, #3B45B0)',
-                'iyem-mesh': 'none',
-                'tinta-gradient': 'linear-gradient(#1F2560, #1F2560)',
             },
             ringOffsetColor: {
                 DEFAULT: 'var(--surface-000)',

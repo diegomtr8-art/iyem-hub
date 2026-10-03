@@ -15,6 +15,7 @@ const SERIES = ['--brand-600', '--brand-300', '--warning', '--success', '--ink-4
 
 // Respaldo por si el CSS aún no cargó (tema claro).
 const RESPALDO = {
+    '--brand-500': '#5b69f5',
     '--brand-600': '#4a56d6',
     '--brand-300': '#9fa7f9',
     '--warning': '#8a5200',

@@ -99,7 +99,7 @@ const iconoModulo = (slug) => modulosPorSlug.value[slug]?.icono ?? 'squares-2x2'
 <template>
     <AppLayout title="Tablero">
         <template #header>
-            <h2>Tablero</h2>
+            <span>Tablero</span>
         </template>
 
         <div class="mx-auto max-w-7xl space-y-8">

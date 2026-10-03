@@ -5,14 +5,10 @@ import { useTema } from '@/Composables/useTema';
 /**
  * Botón de tema claro / oscuro. `aria-pressed` indica si el oscuro está
  * activo; la etiqueta dice qué hace el botón, no el estado actual.
+ *
+ * Sobre fondos brand-900 se coloca dentro de un contenedor con
+ * data-theme="dark": los tokens ya dan el contraste correcto.
  */
-defineProps({
-    sobreOscuro: {
-        type: Boolean,
-        default: false,
-    },
-});
-
 const { tema, alternar } = useTema();
 const oscuro = computed(() => tema.value === 'dark');
 </script>
@@ -20,10 +16,7 @@ const oscuro = computed(() => tema.value === 'dark');
 <template>
     <button
         type="button"
-        class="toque-minimo inline-flex items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
-        :class="sobreOscuro
-            ? 'text-white/80 hover:bg-white/10 hover:text-white focus-visible:ring-offset-brand-900'
-            : 'text-ink-600 hover:bg-surface-100 hover:text-ink'"
+        class="toque-minimo inline-flex items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 text-ink-600 hover:bg-surface-100 hover:text-ink"
         :aria-pressed="oscuro ? 'true' : 'false'"
         :aria-label="oscuro ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
         :title="oscuro ? 'Tema claro' : 'Tema oscuro'"
