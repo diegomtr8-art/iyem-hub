@@ -27,6 +27,18 @@
 |                sale. Es el único lugar del hub donde aparece el guinda.
 |   orden        Posición en la cuadrícula del dashboard.
 |
+| Módulos con tablero dentro del ERP (opcionales):
+|
+|   tablero      Clave del adaptador en `RegistroDeAdaptadores`. Con ella la
+|                tarjeta abre un tablero de indicadores dentro del ERP y el
+|                sitio queda como acción secundaria. null o ausente = sin
+|                tablero, la tarjeta manda al sitio como siempre.
+|   api_base     Raíz de la API de reportes del módulo. El token NO va aquí:
+|                vive en `config/services.php` (`modulos.{slug}.token`) para
+|                que el catálogo, que sí llega a la interfaz, no lo toque.
+|   entorno_de_prueba  true = el tablero muestra la etiqueta "Entorno de
+|                prueba": las cifras no son reales.
+|
 */
 
 return [
@@ -131,16 +143,19 @@ return [
 
     'coworkhub' => [
         'nombre' => 'Nódico 2.0',
-        'descripcion' => 'Nueva plataforma de coworking (CoworkHub).',
+        'descripcion' => 'Plataforma de coworking para emprendedores.',
         'icono' => 'desktop',
-        'url' => 'https://coworking.iyemyucatan.com',
+        'url' => env('NODICO_URL', 'https://prueba.nodico.com.mx'),
         'externo' => true,
-        'estado' => 'desarrollo',
+        'estado' => 'beta',
         'categoria' => 'comercial',
         'responsable' => 'Dirección Comercial',
-        'api_salud' => null,
+        'api_salud' => env('NODICO_API', 'https://prueba.nodico.com.mx/api/v1').'/estado',
         'color' => 'brand-500',
         'orden' => 8,
+        'tablero' => 'nodico',
+        'api_base' => env('NODICO_API', 'https://prueba.nodico.com.mx/api/v1'),
+        'entorno_de_prueba' => (bool) env('NODICO_ENTORNO_DE_PRUEBA', true),
     ],
 
     'crm' => [

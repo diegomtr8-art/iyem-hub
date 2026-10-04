@@ -51,4 +51,15 @@ return [
         ],
     ],
 
+    /*
+     * Tokens de los módulos con tablero (config/modulos.php → `tablero`).
+     * Solo los lee `ClienteDeModulo`, del lado del servidor. Nunca viajan
+     * al navegador.
+     */
+    'modulos' => [
+        'coworkhub' => [
+            'token' => env('NODICO_TOKEN'),
+        ],
+    ],
+
 ];
