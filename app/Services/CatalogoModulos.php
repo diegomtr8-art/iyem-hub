@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Services\Modulos\RegistroDeAdaptadores;
 use Illuminate\Support\Collection;
 
 /**
@@ -45,9 +46,14 @@ class CatalogoModulos
             return collect();
         }
 
-        return $this->todos()->filter(
-            fn (array $modulo) => $usuario->can("ver-{$modulo['slug']}")
-        )->values();
+        $puedeVerTableros = $usuario->can('ver-modulo-tablero');
+
+        return $this->todos()
+            ->filter(fn (array $modulo) => $usuario->can("ver-{$modulo['slug']}"))
+            // Sin el permiso del tablero, la tarjeta se comporta como siempre:
+            // manda al sitio. Ver la tarjeta no es ver los ingresos.
+            ->map(fn (array $modulo) => $puedeVerTableros ? $modulo : [...$modulo, 'url_tablero' => null])
+            ->values();
     }
 
     /**
@@ -74,6 +80,19 @@ class CatalogoModulos
         $modulo = config("modulos.{$slug}");
 
         return $modulo ? $this->normalizar($modulo, $slug) : null;
+    }
+
+    /**
+     * Si el módulo tiene un tablero dentro del ERP.
+     *
+     * Es independiente de `navegable`: un módulo puede tener tablero aunque
+     * su sitio siga en desarrollo, y uno en producción puede no tenerlo.
+     * `navegable` dice si se puede salir hacia el sitio; esto, si se puede
+     * mirar desde aquí.
+     */
+    public function tieneTablero(string $slug): bool
+    {
+        return RegistroDeAdaptadores::existe(config("modulos.{$slug}.tablero"));
     }
 
     /**
@@ -114,9 +133,11 @@ class CatalogoModulos
             'categoria' => $modulo['categoria'] ?? 'institucional',
             'responsable' => $modulo['responsable'] ?? null,
             'api_salud' => $modulo['api_salud'] ?? null,
-            'color' => $modulo['color'] ?? 'iyem-primario',
+            'color' => $modulo['color'] ?? 'brand-500',
             'orden' => $modulo['orden'] ?? 99,
             'navegable' => $navegable,
+            'url_tablero' => $this->tieneTablero($slug) ? route('modulos.tablero', $slug) : null,
+            'entorno_de_prueba' => (bool) ($modulo['entorno_de_prueba'] ?? false),
         ];
     }
 }

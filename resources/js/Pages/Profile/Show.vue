@@ -14,15 +14,16 @@ defineProps({
 </script>
 
 <template>
-    <AppLayout title="Mi Perfil">
+    <AppLayout title="Mi perfil">
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                Mi Perfil
-            </h2>
+            <span>Mi perfil</span>
         </template>
 
-        <div>
-            <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
+            <h1 class="text-display-lg text-ink">Mi perfil</h1>
+            <p class="mt-1 text-body text-ink-600">Tus datos, tu contraseña y la seguridad de tu cuenta.</p>
+
+            <div class="mt-8 space-y-10 sm:space-y-0">
                 <div v-if="$page.props.jetstream.canUpdateProfileInformation">
                     <UpdateProfileInformationForm :user="$page.props.auth.user" />
 
@@ -30,26 +31,23 @@ defineProps({
                 </div>
 
                 <div v-if="$page.props.jetstream.canUpdatePassword">
-                    <UpdatePasswordForm class="mt-10 sm:mt-0" />
+                    <UpdatePasswordForm />
 
                     <SectionBorder />
                 </div>
 
                 <div v-if="$page.props.jetstream.canManageTwoFactorAuthentication">
-                    <TwoFactorAuthenticationForm
-                        :requires-confirmation="confirmsTwoFactorAuthentication"
-                        class="mt-10 sm:mt-0"
-                    />
+                    <TwoFactorAuthenticationForm :requires-confirmation="confirmsTwoFactorAuthentication" />
 
                     <SectionBorder />
                 </div>
 
-                <LogoutOtherBrowserSessionsForm :sessions="sessions" class="mt-10 sm:mt-0" />
+                <LogoutOtherBrowserSessionsForm :sessions="sessions" />
 
                 <template v-if="$page.props.jetstream.hasAccountDeletionFeatures">
                     <SectionBorder />
 
-                    <DeleteUserForm class="mt-10 sm:mt-0" />
+                    <DeleteUserForm />
                 </template>
             </div>
         </div>

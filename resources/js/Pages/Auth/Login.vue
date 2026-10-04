@@ -1,9 +1,8 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AuthenticationCard from '@/Components/AuthenticationCard.vue';
-import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
+import Aviso from '@/Components/Aviso.vue';
+import Campo from '@/Components/Campo.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 
@@ -27,73 +26,54 @@ const submit = () => {
 <template>
     <Head title="Iniciar sesión" />
 
-    <AuthenticationCard>
-        <template #logo>
-            <AuthenticationCardLogo />
-        </template>
+    <AuthenticationCard
+        titulo="Iniciar sesión"
+        descripcion="Entra con tu correo institucional y tu contraseña."
+    >
+        <Aviso v-if="status" tipo="exito" class="mb-6">{{ status }}</Aviso>
 
-        <h1 class="text-2xl font-bold text-gray-800">
-            Bienvenido de vuelta
-        </h1>
-        <p class="mt-2 text-sm text-gray-500">
-            Ingresa tus credenciales para acceder a la plataforma centralizada del IYEM.
-        </p>
-
-        <div v-if="status" class="mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-            {{ status }}
-        </div>
-
-        <form class="mt-8" @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Correo electrónico" />
+        <form class="space-y-5" novalidate @submit.prevent="submit">
+            <Campo id="email" v-slot="campo" etiqueta="Correo electrónico" :error="form.errors.email">
                 <TextInput
-                    id="email"
+                    :id="campo.id"
                     v-model="form.email"
                     type="email"
-                    class="mt-1.5 block w-full"
+                    inputmode="email"
+                    class="block w-full"
+                    :invalido="campo.invalido"
+                    :aria-describedby="campo.describedby"
                     required
                     autofocus
                     autocomplete="username"
-                    placeholder="tu.correo@iyemyucatan.com"
+                    placeholder="nombre@iyemyucatan.com"
                 />
-                <InputError class="mt-2" :message="form.errors.email" />
-            </div>
+            </Campo>
 
-            <div class="mt-5">
-                <InputLabel for="password" value="Contraseña" />
+            <Campo id="password" v-slot="campo" etiqueta="Contraseña" :error="form.errors.password">
                 <TextInput
-                    id="password"
+                    :id="campo.id"
                     v-model="form.password"
                     type="password"
-                    class="mt-1.5 block w-full"
+                    class="block w-full"
+                    :invalido="campo.invalido"
+                    :aria-describedby="campo.describedby"
                     required
                     autocomplete="current-password"
-                    placeholder="••••••••"
                 />
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
+            </Campo>
 
-            <div class="mt-4 flex items-center justify-end">
+            <div v-if="canResetPassword" class="flex justify-end">
                 <Link
-                    v-if="canResetPassword"
                     :href="route('password.request')"
-                    class="rounded-md text-sm text-gray-500 underline decoration-gray-300 underline-offset-2 transition hover:text-iyem-primario hover:decoration-iyem-secundario focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-iyem-secundario"
+                    class="rounded-sm text-small text-action underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
                 >
                     ¿Olvidaste tu contraseña?
                 </Link>
             </div>
 
-            <PrimaryButton
-                class="mt-7 w-full justify-center py-3 text-sm"
-                :class="{ 'opacity-25': form.processing }"
-                :disabled="form.processing"
-            >
-                Ingresar
+            <PrimaryButton class="w-full" :procesando="form.processing">
+                {{ form.processing ? 'Entrando…' : 'Entrar' }}
             </PrimaryButton>
         </form>
-
-        <p class="mt-8 text-center text-xs text-gray-400">
-            Acceso restringido · las cuentas son creadas únicamente por el administrador de la plataforma.
-        </p>
     </AuthenticationCard>
 </template>

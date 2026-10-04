@@ -18,18 +18,15 @@ const hasActions = computed(() => !! useSlots().actions);
             </template>
         </SectionTitle>
 
-        <div class="mt-5 md:mt-0 md:col-span-2">
-            <form @submit.prevent="$emit('submitted')">
-                <div
-                    class="border border-iyem-claro bg-white px-4 py-5 shadow-soft sm:p-6"
-                    :class="hasActions ? 'sm:rounded-t-2xl' : 'sm:rounded-2xl'"
-                >
-                    <div class="grid grid-cols-6 gap-6">
+        <div class="mt-4 md:col-span-2 md:mt-0">
+            <form class="overflow-hidden rounded-lg border border-line bg-surface shadow-sm" @submit.prevent="$emit('submitted')">
+                <div class="p-5 sm:p-6">
+                    <div class="grid grid-cols-6 gap-5">
                         <slot name="form" />
                     </div>
                 </div>
 
-                <div v-if="hasActions" class="flex items-center justify-end border border-t-0 border-iyem-claro bg-iyem-50 px-4 py-3 text-end shadow-soft sm:rounded-b-2xl sm:px-6">
+                <div v-if="hasActions" class="flex flex-wrap items-center justify-end gap-3 border-t border-line bg-surface-50 px-5 py-3 sm:px-6">
                     <slot name="actions" />
                 </div>
             </form>

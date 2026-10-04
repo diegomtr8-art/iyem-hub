@@ -10,15 +10,16 @@ defineProps({
 </script>
 
 <template>
-    <AppLayout title="API Tokens">
+    <AppLayout title="Tokens de API">
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                API Tokens
-            </h2>
+            <span>Tokens de API</span>
         </template>
 
-        <div>
-            <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
+            <h1 class="text-display-lg text-ink">Tokens de API</h1>
+            <p class="mt-1 text-body text-ink-600">Credenciales para que otros sistemas consulten la plataforma en tu nombre.</p>
+
+            <div class="mt-8">
                 <ApiTokenManager
                     :tokens="tokens"
                     :available-permissions="availablePermissions"

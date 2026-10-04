@@ -1,5 +1,6 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import { numero } from '@/formato';
 
 /**
  * Paginación de Laravel.
@@ -14,6 +15,8 @@ defineProps({
         required: true,
     },
 });
+
+const claseBase = 'inline-flex items-center justify-center rounded-md text-small transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2';
 </script>
 
 <template>
@@ -22,9 +25,9 @@ defineProps({
         class="mt-4 flex flex-wrap items-center justify-between gap-3"
         aria-label="Paginación"
     >
-        <p class="text-sm tabular-nums text-gray-500">
-            {{ paginador.from?.toLocaleString('es-MX') ?? 0 }}–{{ paginador.to?.toLocaleString('es-MX') ?? 0 }}
-            de {{ paginador.total.toLocaleString('es-MX') }}
+        <p class="text-small text-ink-600">
+            <span class="font-mono">{{ numero(paginador.from ?? 0) }}–{{ numero(paginador.to ?? 0) }}</span>
+            de <span class="font-mono">{{ numero(paginador.total) }}</span>
         </p>
 
         <!-- Teléfono: solo anterior y siguiente -->
@@ -37,9 +40,8 @@ defineProps({
                 :key="enlace.texto"
                 :href="enlace.url || '#'"
                 preserve-scroll
-                class="toque-minimo inline-flex items-center rounded-lg border border-iyem-200 bg-white px-4 text-sm font-medium text-gray-700 transition hover:bg-iyem-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                :class="!enlace.url ? 'pointer-events-none opacity-40' : ''"
-                :aria-disabled="!enlace.url"
+                :class="[claseBase, 'toque-minimo border border-line-strong bg-surface px-4 font-medium text-ink hover:bg-surface-100', !enlace.url ? 'pointer-events-none opacity-50' : '']"
+                :aria-disabled="!enlace.url ? 'true' : undefined"
             >
                 {{ enlace.texto }}
             </Link>
@@ -52,10 +54,11 @@ defineProps({
                 :key="i"
                 :href="enlace.url || '#'"
                 preserve-scroll
-                class="inline-flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg px-3 text-sm tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
                 :class="[
-                    enlace.active ? 'bg-iyem-gradient text-white shadow-glow' : 'bg-white text-gray-600 hover:bg-iyem-claro',
-                    !enlace.url ? 'pointer-events-none opacity-40' : '',
+                    claseBase,
+                    'h-9 min-w-[2.25rem] px-3 font-mono',
+                    enlace.active ? 'bg-action font-semibold text-action-ink' : 'text-ink-600 hover:bg-surface-100 hover:text-ink',
+                    !enlace.url ? 'pointer-events-none opacity-50' : '',
                 ]"
                 :aria-current="enlace.active ? 'page' : undefined"
                 v-html="enlace.label"

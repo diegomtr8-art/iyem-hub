@@ -1,10 +1,42 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
+import plugin from 'tailwindcss/plugin';
+
+/*
+ * Estilos tipográficos del sistema de diseño. Cada uno trae su familia, así
+ * `text-title` o `text-number` bastan: no hay que acordarse de agregar
+ * `font-display` o `font-mono` al lado.
+ */
+const display = ['Archivo', ...defaultTheme.fontFamily.sans];
+const sans = ['Inter', ...defaultTheme.fontFamily.sans];
+const mono = ['"JetBrains Mono"', ...defaultTheme.fontFamily.mono];
+
+const tipografia = {
+    'display-xl': { fontFamily: display, fontSize: '40px', lineHeight: '44px', fontWeight: '700', letterSpacing: '-0.01em' },
+    'display-lg': { fontFamily: display, fontSize: '32px', lineHeight: '36px', fontWeight: '700', letterSpacing: '-0.01em' },
+    'display-md': { fontFamily: display, fontSize: '24px', lineHeight: '30px', fontWeight: '600' },
+    title: { fontFamily: display, fontSize: '20px', lineHeight: '28px', fontWeight: '600' },
+    subtitle: { fontFamily: sans, fontSize: '16px', lineHeight: '24px', fontWeight: '600' },
+    body: { fontFamily: sans, fontSize: '15px', lineHeight: '22px', fontWeight: '400' },
+    'body-strong': { fontFamily: sans, fontSize: '15px', lineHeight: '22px', fontWeight: '600' },
+    small: { fontFamily: sans, fontSize: '13px', lineHeight: '18px', fontWeight: '400' },
+    caption: { fontFamily: sans, fontSize: '12px', lineHeight: '16px', fontWeight: '500' },
+    overline: { fontFamily: sans, fontSize: '11px', lineHeight: '14px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase' },
+    // Cifra de KPI: medida de display-md, en mono para que se lea como dato.
+    'number-display': { fontFamily: mono, fontSize: '24px', lineHeight: '30px', fontWeight: '600', fontVariantNumeric: 'tabular-nums' },
+    'number-lg': { fontFamily: mono, fontSize: '20px', lineHeight: '26px', fontWeight: '600', fontVariantNumeric: 'tabular-nums' },
+    number: { fontFamily: mono, fontSize: '15px', lineHeight: '22px', fontWeight: '500', fontVariantNumeric: 'tabular-nums' },
+    code: { fontFamily: mono, fontSize: '13px', lineHeight: '20px', fontWeight: '400' },
+};
 
 /** @type {import('tailwindcss').Config} */
 export default {
-    darkMode: 'class', // Nunca se aplica la clase "dark": el modo oscuro está deshabilitado en toda la plataforma.
+    // El tema lo decide el atributo data-theme de <html>, que escribe un
+    // script en línea de app.blade.php antes de pintar. Los colores
+    // semánticos son variables CSS que ya cambian solas con el tema, así que
+    // `dark:` solo hace falta con algún brand-* numérico.
+    darkMode: ['class', '[data-theme="dark"]'],
 
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
@@ -12,60 +44,103 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './resources/js/**/*.vue',
+        './resources/js/**/*.js',
+        './config/modulos.php',
     ],
 
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Arial', ...defaultTheme.fontFamily.sans],
+                display,
+                sans,
+                mono,
             },
             colors: {
-                // Escala completa derivada de los colores institucionales IYEM
-                // (50-950), más los alias históricos usados en la app.
-                iyem: {
-                    50: '#FBF3F5',
-                    100: '#F5EAEE',
-                    200: '#EAD0D8',
-                    300: '#D9A9B7',
-                    400: '#C0728A',
-                    500: '#9F2241',
-                    600: '#871E38',
-                    700: '#691C32',
-                    800: '#4D1526',
-                    900: '#33101A',
-                    950: '#1F0A10',
-                    primario: '#691C32',
-                    secundario: '#9F2241',
-                    claro: '#F5EAEE',
-                    neutro: '#F4F4F6',
-                    // Acento gubernamental. Uso restringido: KPIs, badges y
-                    // series de graficas. Nunca como color de superficie.
-                    dorado: '#BC955C',
-                    // Colores semanticos de estado.
-                    exito: '#1F7A5C',
-                    alerta: '#B45309',
-                    error: '#9B1C1C',
+                // Marca: igual en los dos temas.
+                brand: {
+                    50: '#F1F2FE',
+                    100: '#DDE0FD',
+                    200: '#BCC1FB',
+                    300: '#9FA7F9',
+                    400: '#7C87F7',
+                    500: '#5B69F5',
+                    600: '#4A56D6',
+                    700: '#3B45B0',
+                    800: '#2E3689',
+                    900: '#1F2560',
                 },
-                // Escala oscura (con matiz guinda) para el sidebar y superficies "tech".
-                tinta: {
-                    700: '#3A1D24',
-                    800: '#271217',
-                    900: '#170B0E',
-                    950: '#0C0507',
+                // Solo la tarjeta del módulo CREA.
+                guinda: {
+                    700: '#6B1938',
                 },
+
+                // Semánticos: apuntan a variables de resources/css/tokens.css
+                // y cambian con el tema sin escribir `dark:`.
+                surface: {
+                    DEFAULT: 'var(--surface-000)',
+                    50: 'var(--surface-050)',
+                    100: 'var(--surface-100)',
+                    brand: 'var(--surface-brand)',
+                    inverse: 'var(--surface-inverse)',
+                },
+                ink: {
+                    DEFAULT: 'var(--ink-900)',
+                    600: 'var(--ink-600)',
+                    400: 'var(--ink-400)',
+                    inverse: 'var(--ink-inverse)',
+                },
+                line: {
+                    DEFAULT: 'var(--border)',
+                    strong: 'var(--border-strong)',
+                },
+                action: {
+                    DEFAULT: 'var(--action)',
+                    hover: 'var(--action-hover)',
+                    ink: 'var(--action-ink)',
+                },
+                focus: 'var(--focus-ring)',
+                success: {
+                    DEFAULT: 'var(--success)',
+                    surface: 'var(--success-surface)',
+                },
+                warning: {
+                    DEFAULT: 'var(--warning)',
+                    surface: 'var(--warning-surface)',
+                },
+                danger: {
+                    DEFAULT: 'var(--danger)',
+                    surface: 'var(--danger-surface)',
+                    fill: 'var(--danger-fill)',
+                },
+            },
+            borderRadius: {
+                none: '0',
+                sm: '4px',
+                DEFAULT: '8px',
+                md: '8px',
+                lg: '12px',
+                xl: '16px',
+                full: '9999px',
             },
             boxShadow: {
-                soft: '0 1px 2px 0 rgb(0 0 0 / 0.04), 0 8px 24px -8px rgb(105 28 50 / 0.12)',
-                'soft-lg': '0 12px 32px -12px rgb(105 28 50 / 0.25)',
-                glow: '0 0 0 1px rgb(159 34 65 / 0.15), 0 8px 24px -4px rgb(159 34 65 / 0.35)',
+                sm: 'var(--shadow-sm)',
+                DEFAULT: 'var(--shadow-sm)',
+                md: 'var(--shadow-md)',
+                lg: 'var(--shadow-lg)',
             },
-            backgroundImage: {
-                'iyem-gradient': 'linear-gradient(135deg, #691C32 0%, #9F2241 55%, #B93A5C 100%)',
-                'iyem-mesh': 'radial-gradient(at 20% 10%, rgba(159,34,65,0.20) 0px, transparent 50%), radial-gradient(at 85% 0%, rgba(105,28,50,0.18) 0px, transparent 50%), radial-gradient(at 90% 90%, rgba(159,34,65,0.14) 0px, transparent 50%)',
-                'tinta-gradient': 'linear-gradient(180deg, #271217 0%, #170B0E 60%, #0C0507 100%)',
+            ringOffsetColor: {
+                DEFAULT: 'var(--surface-000)',
             },
         },
     },
 
-    plugins: [forms, typography],
+    plugins: [
+        forms,
+        typography,
+        plugin(({ addUtilities }) => {
+            addUtilities(
+                Object.fromEntries(Object.entries(tipografia).map(([nombre, estilo]) => [`.text-${nombre}`, { ...estilo, fontFamily: estilo.fontFamily.join(', ') }])),
+            );
+        }),
+    ],
 };

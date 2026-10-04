@@ -11,15 +11,15 @@ const emit = defineEmits(['confirmed']);
 defineProps({
     title: {
         type: String,
-        default: 'Confirm Password',
+        default: 'Confirma tu contraseña',
     },
     content: {
         type: String,
-        default: 'For your security, please confirm your password to continue.',
+        default: 'Por seguridad, escribe tu contraseña para continuar.',
     },
     button: {
         type: String,
-        default: 'Confirm',
+        default: 'Confirmar',
     },
 });
 
@@ -82,35 +82,33 @@ const closeModal = () => {
             </template>
 
             <template #content>
-                {{ content }}
+                <p>{{ content }}</p>
 
                 <div class="mt-4">
+                    <label for="confirmar-contrasena" class="block text-body-strong text-ink">Contraseña</label>
                     <TextInput
+                        id="confirmar-contrasena"
                         ref="passwordInput"
                         v-model="form.password"
                         type="password"
-                        class="mt-1 block w-3/4"
-                        placeholder="Password"
+                        class="mt-1.5 block w-full sm:w-3/4"
+                        :invalido="Boolean(form.error)"
+                        :aria-describedby="form.error ? 'confirmar-contrasena-error' : undefined"
                         autocomplete="current-password"
                         @keyup.enter="confirmPassword"
                     />
 
-                    <InputError :message="form.error" class="mt-2" />
+                    <InputError id="confirmar-contrasena-error" :message="form.error" class="mt-1.5" />
                 </div>
             </template>
 
             <template #footer>
                 <SecondaryButton @click="closeModal">
-                    Cancel
+                    Cancelar
                 </SecondaryButton>
 
-                <PrimaryButton
-                    class="ms-3"
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                    @click="confirmPassword"
-                >
-                    {{ button }}
+                <PrimaryButton type="button" :procesando="form.processing" @click="confirmPassword">
+                    {{ form.processing ? 'Confirmando…' : button }}
                 </PrimaryButton>
             </template>
         </DialogModal>

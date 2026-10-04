@@ -5,6 +5,8 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import IconoNav from '@/Components/IconoNav.vue';
 import Grafica from '@/Components/Grafica.vue';
 import Paginacion from '@/Components/Paginacion.vue';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
+import { numero } from '@/formato';
 
 const props = defineProps({
     catalogo: { type: Array, default: () => [] },
@@ -105,13 +107,34 @@ const urlExportar = (formato) =>
 
 const clavesDeColumna = computed(() => Object.keys(props.consulta.columnas));
 
-const esNumero = (valor) => typeof valor === 'number';
+// Cifra = número, o texto que es un porcentaje ya formateado por el backend
+// ("5.9 %"). Las dos se alinean a la derecha en mono; solo los números se
+// reformatean con separador de miles.
+const esNumero = (valor) => typeof valor === 'number' || (typeof valor === 'string' && /^-?[\d.,]+\s*%$/.test(valor));
 
-const claseSituacion = (valor) => ({
-    'Sin presencia': 'text-iyem-error font-medium',
-    'Cobertura débil': 'text-iyem-alerta font-medium',
-    'Crítico': 'text-iyem-error font-medium',
-}[valor] ?? '');
+// Una columna es de cifras si alguna fila trae una: entonces se alinea a la
+// derecha en mono, cabecera incluida.
+const columnaNumerica = (clave) => props.tabla.data.some((fila) => esNumero(fila[clave]));
+
+// La primera columna identifica el renglón; en móvil es el título de la tarjeta.
+const claveTitulo = computed(() => clavesDeColumna.value[0]);
+const clavesDetalle = computed(() => clavesDeColumna.value.slice(1));
+
+const valorCelda = (valor) => (typeof valor === 'number' ? numero(valor) : (valor ?? '—'));
+
+// Situaciones que piden atención. El texto ya dice qué pasa; el color y el
+// ícono solo lo refuerzan.
+const SITUACIONES = {
+    'Sin presencia': 'text-danger',
+    'Cobertura débil': 'text-warning',
+    'Crítico': 'text-danger',
+};
+
+const claseSituacion = (valor) => SITUACIONES[valor] ?? '';
+
+const claseCampo = 'h-10 w-full rounded-md border-line-strong bg-surface px-3 text-body text-ink focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-2';
+const claseEtiqueta = 'block text-body-strong text-ink';
+const claseSecundario = 'toque-minimo inline-flex items-center justify-center gap-2 rounded-md border border-line-strong bg-surface px-4 text-body-strong text-ink transition-colors hover:bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2';
 </script>
 
 <template>
@@ -120,7 +143,7 @@ const claseSituacion = (valor) => ({
             <div class="flex min-w-0 items-center gap-2">
                 <Link
                     :href="route('consultas.index')"
-                    class="shrink-0 text-gray-400 transition hover:text-iyem-primario"
+                    class="toque-minimo -ml-2 flex shrink-0 items-center justify-center rounded-md text-ink-600 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     aria-label="Volver a las consultas"
                 >
                     <IconoNav icono="arrow" class="h-5 w-5 rotate-180" />
@@ -129,285 +152,318 @@ const claseSituacion = (valor) => ({
             </div>
         </template>
 
-        <!-- Selector rápido de consulta -->
-        <div class="scrollbar-fina -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-            <Link
-                v-for="opcion in catalogo"
-                :key="opcion.clave"
-                :href="route('consultas.index', { consulta: opcion.clave })"
-                class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                :class="opcion.clave === consulta.clave
-                    ? 'border-transparent bg-iyem-gradient text-white shadow-glow'
-                    : 'border-iyem-200 bg-white text-gray-600 hover:border-iyem-300 hover:text-iyem-700'"
+        <div class="mx-auto max-w-7xl">
+            <!-- Selector rápido de consulta. Scroll horizontal propio en
+                 móvil para que nunca desplace el body. -->
+            <nav aria-label="Otras consultas" class="scrollbar-fina -mx-1 flex gap-2 overflow-x-auto px-1 pb-2">
+                <Link
+                    v-for="opcion in catalogo"
+                    :key="opcion.clave"
+                    :href="route('consultas.index', { consulta: opcion.clave })"
+                    class="toque-minimo inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 text-small font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
+                    :class="opcion.clave === consulta.clave
+                        ? 'border-transparent bg-action text-action-ink'
+                        : 'border-line-strong bg-surface text-ink hover:bg-surface-100'"
+                    :aria-current="opcion.clave === consulta.clave ? 'page' : undefined"
+                >
+                    <IconoNav :icono="opcion.icono" class="h-4 w-4" />
+                    {{ opcion.titulo }}
+                </Link>
+            </nav>
+
+            <h1 class="mt-6 text-display-lg text-ink">{{ consulta.titulo }}</h1>
+            <p class="mt-2 max-w-3xl text-body text-ink-600">
+                {{ consulta.descripcion }}
+            </p>
+
+            <!-- ============================================================
+                 Filtros
+                 ============================================================ -->
+            <form
+                class="mt-6 rounded-lg border border-line bg-surface shadow-sm"
+                aria-labelledby="titulo-filtros"
+                @submit.prevent="aplicar"
             >
-                <IconoNav :icono="opcion.icono" class="h-4 w-4" />
-                {{ opcion.titulo }}
-            </Link>
-        </div>
-
-        <p class="mt-4 text-sm text-gray-500">
-            {{ consulta.descripcion }}
-        </p>
-
-        <!-- ============================================================
-             Filtros
-             ============================================================ -->
-        <form class="mt-4 rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft" @submit.prevent="aplicar">
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                    <label for="desde" class="block text-xs font-medium uppercase tracking-wide text-gray-500">
-                        Desde
-                    </label>
-                    <input
-                        id="desde"
-                        v-model="valores.desde"
-                        type="date"
-                        class="mt-1 h-11 w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-iyem-secundario focus:ring-iyem-secundario"
-                    >
+                <div class="border-b border-line bg-surface-50 px-5 py-3">
+                    <h2 id="titulo-filtros" class="text-subtitle text-ink">Filtros</h2>
                 </div>
 
-                <div>
-                    <label for="hasta" class="block text-xs font-medium uppercase tracking-wide text-gray-500">
-                        Hasta
-                    </label>
-                    <input
-                        id="hasta"
-                        v-model="valores.hasta"
-                        type="date"
-                        class="mt-1 h-11 w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-iyem-secundario focus:ring-iyem-secundario"
-                    >
-                </div>
+                <div class="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
+                    <div>
+                        <label for="desde" :class="claseEtiqueta">Desde</label>
+                        <input id="desde" v-model="valores.desde" type="date" :class="[claseCampo, 'mt-1.5 font-mono']">
+                    </div>
 
-                <div>
-                    <label for="municipio" class="block text-xs font-medium uppercase tracking-wide text-gray-500">
-                        Municipio
-                    </label>
-                    <select
-                        id="municipio"
-                        v-model="valores.municipio"
-                        class="mt-1 h-11 w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-iyem-secundario focus:ring-iyem-secundario"
-                    >
-                        <option value="">
-                            Todos
-                        </option>
-                        <option v-for="m in municipios" :key="m" :value="m">
-                            {{ m }}
-                        </option>
-                    </select>
-                </div>
+                    <div>
+                        <label for="hasta" :class="claseEtiqueta">Hasta</label>
+                        <input id="hasta" v-model="valores.hasta" type="date" :class="[claseCampo, 'mt-1.5 font-mono']">
+                    </div>
 
-                <!-- Controles propios de cada consulta -->
-                <template v-for="control in consulta.controles" :key="control.nombre">
-                    <div v-if="control.tipo === 'select'">
-                        <label :for="control.nombre" class="block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            {{ control.etiqueta }}
-                        </label>
-                        <select
-                            :id="control.nombre"
-                            v-model="valores[control.nombre]"
-                            class="mt-1 h-11 w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-iyem-secundario focus:ring-iyem-secundario"
-                        >
-                            <option v-for="(texto, clave) in control.opciones" :key="clave" :value="clave">
-                                {{ texto }}
+                    <div>
+                        <label for="municipio" :class="claseEtiqueta">Municipio</label>
+                        <select id="municipio" v-model="valores.municipio" :class="[claseCampo, 'mt-1.5 pr-9']">
+                            <option value="">Todos los municipios</option>
+                            <option v-for="m in municipios" :key="m" :value="m">
+                                {{ m }}
                             </option>
                         </select>
                     </div>
 
-                    <div v-else-if="control.tipo === 'numero'">
-                        <label :for="control.nombre" class="block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            {{ control.etiqueta }}
-                        </label>
-                        <input
-                            :id="control.nombre"
-                            v-model="valores[control.nombre]"
-                            type="number"
-                            inputmode="numeric"
-                            min="1"
-                            class="mt-1 h-11 w-full rounded-lg border-gray-300 text-sm tabular-nums shadow-sm focus:border-iyem-secundario focus:ring-iyem-secundario"
-                        >
-                        <p v-if="control.ayuda" class="mt-1 text-xs text-gray-400">
-                            {{ control.ayuda }}
-                        </p>
-                    </div>
-
-                    <fieldset v-else-if="control.tipo === 'checkbox-multiple'" class="sm:col-span-2 lg:col-span-4">
-                        <legend class="text-xs font-medium uppercase tracking-wide text-gray-500">
-                            {{ control.etiqueta }}
-                        </legend>
-                        <p v-if="control.ayuda" class="mt-0.5 text-xs text-gray-400">
-                            {{ control.ayuda }}
-                        </p>
-                        <div class="mt-2 flex flex-wrap gap-2">
-                            <label
-                                v-for="(texto, clave) in control.opciones"
-                                :key="clave"
-                                class="toque-minimo inline-flex cursor-pointer items-center gap-2 rounded-full border px-3.5 text-sm transition"
-                                :class="valores[control.nombre].includes(clave)
-                                    ? 'border-transparent bg-iyem-gradient text-white shadow-glow'
-                                    : 'border-iyem-200 bg-white text-gray-600 hover:border-iyem-300'"
-                            >
-                                <input
-                                    v-model="valores[control.nombre]"
-                                    type="checkbox"
-                                    :value="clave"
-                                    class="sr-only"
-                                >
-                                {{ texto }}
-                            </label>
+                    <!-- Controles propios de cada consulta -->
+                    <template v-for="control in consulta.controles" :key="control.nombre">
+                        <div v-if="control.tipo === 'select'">
+                            <label :for="control.nombre" :class="claseEtiqueta">{{ control.etiqueta }}</label>
+                            <select :id="control.nombre" v-model="valores[control.nombre]" :class="[claseCampo, 'mt-1.5 pr-9']">
+                                <option v-for="(texto, clave) in control.opciones" :key="clave" :value="clave">
+                                    {{ texto }}
+                                </option>
+                            </select>
                         </div>
-                    </fieldset>
-                </template>
-            </div>
 
-            <div class="mt-4 flex flex-wrap items-center gap-2">
-                <button
-                    type="submit"
-                    class="toque-minimo inline-flex items-center justify-center gap-2 rounded-lg bg-iyem-gradient px-4 text-sm font-semibold text-white shadow-soft transition hover:shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario focus-visible:ring-offset-2"
-                >
-                    <IconoNav icono="filtro" class="h-4 w-4" />
-                    Aplicar
-                </button>
+                        <div v-else-if="control.tipo === 'numero'">
+                            <label :for="control.nombre" :class="claseEtiqueta">{{ control.etiqueta }}</label>
+                            <input
+                                :id="control.nombre"
+                                v-model="valores[control.nombre]"
+                                type="number"
+                                inputmode="numeric"
+                                min="1"
+                                :class="[claseCampo, 'mt-1.5 font-mono']"
+                                :aria-describedby="control.ayuda ? `${control.nombre}-ayuda` : undefined"
+                            >
+                            <p v-if="control.ayuda" :id="`${control.nombre}-ayuda`" class="mt-1.5 text-small text-ink-600">
+                                {{ control.ayuda }}
+                            </p>
+                        </div>
 
-                <button
-                    v-if="hayFiltros"
-                    type="button"
-                    class="toque-minimo inline-flex items-center justify-center rounded-lg px-3 text-sm font-medium text-gray-500 transition hover:text-gray-700"
-                    @click="limpiar"
-                >
-                    Limpiar
-                </button>
-
-                <div class="ml-auto flex flex-wrap gap-2">
-                    <button
-                        type="button"
-                        class="toque-minimo inline-flex items-center justify-center gap-2 rounded-lg border border-iyem-200 bg-white px-3 text-sm font-medium text-gray-600 transition hover:bg-iyem-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                        @click="copiarEnlace"
-                    >
-                        <IconoNav :icono="enlaceCopiado ? 'exito' : 'externo'" class="h-4 w-4" />
-                        {{ enlaceCopiado ? '¡Copiado!' : 'Copiar enlace' }}
-                    </button>
-
-                    <template v-if="puedeExportar">
-                        <a
-                            :href="urlExportar('xlsx')"
-                            class="toque-minimo inline-flex items-center justify-center gap-2 rounded-lg border border-iyem-200 bg-white px-3 text-sm font-medium text-iyem-700 transition hover:bg-iyem-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                        >
-                            <IconoNav icono="descargar" class="h-4 w-4" />
-                            XLSX
-                        </a>
-                        <a
-                            :href="urlExportar('csv')"
-                            class="toque-minimo inline-flex items-center justify-center gap-2 rounded-lg border border-iyem-200 bg-white px-3 text-sm font-medium text-gray-600 transition hover:bg-iyem-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                        >
-                            <IconoNav icono="descargar" class="h-4 w-4" />
-                            CSV
-                        </a>
+                        <fieldset v-else-if="control.tipo === 'checkbox-multiple'" class="sm:col-span-2 lg:col-span-4">
+                            <legend :class="claseEtiqueta">{{ control.etiqueta }}</legend>
+                            <p v-if="control.ayuda" class="mt-0.5 text-small text-ink-600">
+                                {{ control.ayuda }}
+                            </p>
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <!-- Píldora de filtro: la casilla real queda oculta y
+                                     el foco se dibuja en la píldora completa. -->
+                                <label
+                                    v-for="(texto, clave) in control.opciones"
+                                    :key="clave"
+                                    class="toque-minimo inline-flex cursor-pointer items-center gap-2 rounded-full border px-4 text-small font-medium transition-colors focus-within:ring-2 focus-within:ring-focus focus-within:ring-offset-2"
+                                    :class="valores[control.nombre].includes(clave)
+                                        ? 'border-transparent bg-action text-action-ink'
+                                        : 'border-line-strong bg-surface text-ink hover:bg-surface-100'"
+                                >
+                                    <input
+                                        v-model="valores[control.nombre]"
+                                        type="checkbox"
+                                        :value="clave"
+                                        class="sr-only"
+                                    >
+                                    <svg
+                                        v-if="valores[control.nombre].includes(clave)"
+                                        class="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke-width="2"
+                                        stroke="currentColor"
+                                        aria-hidden="true"
+                                    >
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                    {{ texto }}
+                                </label>
+                            </div>
+                        </fieldset>
                     </template>
                 </div>
-            </div>
-        </form>
 
-        <!-- ============================================================
-             Resumen
-             ============================================================ -->
-        <div v-if="resumen.length" class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div
-                v-for="(dato, i) in resumen"
-                :key="i"
-                class="rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft"
-            >
-                <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                    {{ dato.etiqueta }}
-                </p>
-                <p class="mt-1 text-2xl font-bold tabular-nums text-iyem-700">
-                    {{ typeof dato.valor === 'number' ? dato.valor.toLocaleString('es-MX') : dato.valor }}
-                </p>
-                <p v-if="dato.detalle" class="mt-0.5 text-xs text-gray-400">
-                    {{ dato.detalle }}
-                </p>
-            </div>
-        </div>
+                <div class="flex flex-wrap items-center gap-3 border-t border-line bg-surface-50 px-5 py-3">
+                    <PrimaryButton class="toque-minimo">
+                        <IconoNav icono="filtro" class="h-4 w-4" />
+                        Aplicar filtros
+                    </PrimaryButton>
 
-        <!-- ============================================================
-             Gráfica
-             ============================================================ -->
-        <div class="mt-5">
-            <Grafica v-if="grafica" :datos="grafica" />
-        </div>
+                    <button
+                        v-if="hayFiltros"
+                        type="button"
+                        class="toque-minimo inline-flex items-center justify-center rounded-md px-3 text-body-strong text-action transition-colors hover:bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
+                        @click="limpiar"
+                    >
+                        Limpiar filtros
+                    </button>
 
-        <!-- ============================================================
-             Tabla
-             ============================================================ -->
-        <template v-if="tabla.data.length">
-            <!-- Teléfono: tarjetas apiladas -->
-            <ul class="mt-5 space-y-3 md:hidden">
-                <li
-                    v-for="(fila, i) in tabla.data"
-                    :key="i"
-                    class="rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft"
-                >
-                    <dl class="space-y-1.5 text-sm">
-                        <div v-for="clave in clavesDeColumna" :key="clave" class="flex gap-3">
-                            <dt class="w-1/3 shrink-0 text-gray-400">
-                                {{ consulta.columnas[clave] }}
-                            </dt>
-                            <dd
-                                class="min-w-0 flex-1 break-words text-gray-700"
-                                :class="[esNumero(fila[clave]) ? 'tabular-nums font-medium' : '', claseSituacion(fila[clave])]"
-                            >
-                                {{ esNumero(fila[clave]) ? fila[clave].toLocaleString('es-MX') : (fila[clave] ?? '—') }}
-                            </dd>
-                        </div>
-                    </dl>
-                </li>
-            </ul>
+                    <div class="flex w-full flex-wrap gap-3 sm:ml-auto sm:w-auto">
+                        <button type="button" :class="claseSecundario" @click="copiarEnlace">
+                            <IconoNav :icono="enlaceCopiado ? 'exito' : 'externo'" class="h-4 w-4" />
+                            <span aria-live="polite">{{ enlaceCopiado ? 'Enlace copiado' : 'Copiar enlace' }}</span>
+                        </button>
 
-            <!-- Tablet y escritorio: tabla -->
-            <div class="scrollbar-fina scroll-suave-ios mt-5 hidden overflow-x-auto rounded-2xl border border-iyem-200 bg-white shadow-soft md:block">
-                <table class="min-w-full divide-y divide-iyem-100 text-sm">
-                    <thead class="bg-iyem-50 text-left text-xs uppercase tracking-wide text-iyem-700">
-                        <tr>
-                            <th v-for="clave in clavesDeColumna" :key="clave" scope="col" class="whitespace-nowrap px-4 py-3">
-                                {{ consulta.columnas[clave] }}
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-iyem-100">
-                        <tr
+                        <template v-if="puedeExportar">
+                            <a :href="urlExportar('xlsx')" :class="claseSecundario">
+                                <IconoNav icono="descargar" class="h-4 w-4" />
+                                Exportar XLSX
+                            </a>
+                            <a :href="urlExportar('csv')" :class="claseSecundario">
+                                <IconoNav icono="descargar" class="h-4 w-4" />
+                                Exportar CSV
+                            </a>
+                        </template>
+                    </div>
+                </div>
+            </form>
+
+            <!-- ============================================================
+                 Resumen
+                 ============================================================ -->
+            <section v-if="resumen.length" class="mt-6" aria-label="Resumen de la consulta">
+                <div class="grid grid-cols-2 gap-4 sm:gap-6 xl:grid-cols-4">
+                    <div
+                        v-for="(dato, i) in resumen"
+                        :key="i"
+                        class="rounded-lg border border-line bg-surface p-4 shadow-sm sm:p-5"
+                    >
+                        <p class="text-overline text-ink-600">{{ dato.etiqueta }}</p>
+                        <p class="mt-2 text-number-display text-ink">
+                            {{ valorCelda(dato.valor) }}
+                        </p>
+                        <p v-if="dato.detalle" class="mt-1 text-small text-ink-600">
+                            {{ dato.detalle }}
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 Gráfica
+                 ============================================================ -->
+            <section v-if="grafica" class="mt-6" aria-label="Gráfica de la consulta">
+                <Grafica :datos="grafica" :etiqueta="`Gráfica de ${consulta.titulo}. Los mismos datos están en la tabla de resultados.`" />
+            </section>
+
+            <!-- ============================================================
+                 Resultados
+                 ============================================================ -->
+            <section class="mt-8" aria-labelledby="titulo-resultados">
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <h2 id="titulo-resultados" class="text-title text-ink">Resultados</h2>
+                    <p v-if="tabla.total" class="text-small text-ink-600">
+                        <span class="font-mono">{{ numero(tabla.total) }}</span>
+                        {{ tabla.total === 1 ? 'renglón' : 'renglones' }}
+                    </p>
+                </div>
+
+                <template v-if="tabla.data.length">
+                    <!-- Teléfono: lista de tarjetas. Una tabla de varias columnas
+                         con scroll horizontal no se lee en 375 px. -->
+                    <ul class="mt-4 space-y-4 md:hidden" role="list">
+                        <li
                             v-for="(fila, i) in tabla.data"
                             :key="i"
-                            class="transition-colors duration-150 hover:bg-iyem-50/60"
+                            class="rounded-lg border border-line bg-surface p-4 shadow-sm"
                         >
-                            <td
-                                v-for="clave in clavesDeColumna"
-                                :key="clave"
-                                class="px-4 py-3 text-gray-700"
-                                :class="[esNumero(fila[clave]) ? 'tabular-nums font-medium' : '', claseSituacion(fila[clave])]"
+                            <Link
+                                v-if="claveTitulo === 'nombre_completo' && fila.id"
+                                :href="route('padron.show', fila.id)"
+                                class="rounded-sm text-body-strong text-action underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
                             >
-                                <Link
-                                    v-if="clave === 'nombre_completo' && fila.id"
-                                    :href="route('padron.show', fila.id)"
-                                    class="text-gray-800 underline-offset-2 transition hover:text-iyem-700 hover:underline"
+                                {{ fila[claveTitulo] }}
+                            </Link>
+                            <p
+                                v-else
+                                class="text-body-strong"
+                                :class="[esNumero(fila[claveTitulo]) ? 'font-mono' : '', claseSituacion(fila[claveTitulo]) || 'text-ink']"
+                            >
+                                {{ valorCelda(fila[claveTitulo]) }}
+                            </p>
+
+                            <dl v-if="clavesDetalle.length" class="mt-3 space-y-2 border-t border-line pt-3">
+                                <div v-for="clave in clavesDetalle" :key="clave" class="flex items-baseline justify-between gap-4">
+                                    <dt class="text-small text-ink-600">{{ consulta.columnas[clave] }}</dt>
+                                    <dd
+                                        class="min-w-0 break-words text-right"
+                                        :class="[
+                                            esNumero(fila[clave]) ? 'text-number' : 'text-body',
+                                            claseSituacion(fila[clave]) ? `${claseSituacion(fila[clave])} font-semibold` : 'text-ink',
+                                        ]"
+                                    >
+                                        <Link
+                                            v-if="clave === 'nombre_completo' && fila.id"
+                                            :href="route('padron.show', fila.id)"
+                                            class="rounded-sm text-action underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                                        >
+                                            {{ fila[clave] }}
+                                        </Link>
+                                        <template v-else>{{ valorCelda(fila[clave]) }}</template>
+                                    </dd>
+                                </div>
+                            </dl>
+                        </li>
+                    </ul>
+
+                    <!-- Tablet y escritorio: tabla a sangre dentro de su contenedor -->
+                    <div class="scrollbar-fina scroll-suave-ios mt-4 hidden max-h-[70vh] overflow-auto border border-line bg-surface md:block">
+                        <table class="min-w-full text-left">
+                            <thead class="sticky top-0 z-10 bg-surface-50">
+                                <tr>
+                                    <th
+                                        v-for="clave in clavesDeColumna"
+                                        :key="clave"
+                                        scope="col"
+                                        class="whitespace-nowrap border-b border-line px-3 py-2 text-overline text-ink-600"
+                                        :class="columnaNumerica(clave) ? 'text-right' : 'text-left'"
+                                    >
+                                        {{ consulta.columnas[clave] }}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="(fila, i) in tabla.data"
+                                    :key="i"
+                                    class="border-b border-line transition-colors hover:bg-surface-100"
                                 >
-                                    {{ fila[clave] }}
-                                </Link>
-                                <template v-else>
-                                    {{ esNumero(fila[clave]) ? fila[clave].toLocaleString('es-MX') : (fila[clave] ?? '—') }}
-                                </template>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </template>
+                                    <td
+                                        v-for="clave in clavesDeColumna"
+                                        :key="clave"
+                                        class="h-11 px-3"
+                                        :class="[
+                                            esNumero(fila[clave]) ? 'text-right text-number' : 'text-body',
+                                            claseSituacion(fila[clave]) ? `${claseSituacion(fila[clave])} font-semibold` : 'text-ink',
+                                        ]"
+                                    >
+                                        <Link
+                                            v-if="clave === 'nombre_completo' && fila.id"
+                                            :href="route('padron.show', fila.id)"
+                                            class="rounded-sm text-action underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                                        >
+                                            {{ fila[clave] }}
+                                        </Link>
+                                        <template v-else>
+                                            {{ valorCelda(fila[clave]) }}
+                                        </template>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
 
-        <p
-            v-else
-            class="mt-5 rounded-2xl border border-dashed border-iyem-200 px-4 py-10 text-center text-sm text-gray-500"
-        >
-            Esta consulta no devolvió resultados con los filtros aplicados.
-        </p>
+                <div v-else class="mt-4 rounded-lg border border-line bg-surface p-6">
+                    <p class="text-body-strong text-ink">No hay resultados con estos filtros.</p>
+                    <p class="mt-1 text-small text-ink-600">
+                        Amplía el rango de fechas o quita algún filtro para ver más renglones.
+                    </p>
+                    <button
+                        v-if="hayFiltros"
+                        type="button"
+                        :class="[claseSecundario, 'mt-4']"
+                        @click="limpiar"
+                    >
+                        Limpiar filtros
+                    </button>
+                </div>
 
-        <Paginacion :paginador="tabla" />
+                <Paginacion :paginador="tabla" />
+            </section>
+        </div>
     </AppLayout>
 </template>

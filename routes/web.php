@@ -5,14 +5,34 @@ use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\BuscadorController;
 use App\Http\Controllers\ConsultasController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ModuloController;
 use App\Http\Controllers\PadronController;
 use App\Http\Controllers\PadronDuplicadosController;
 use App\Http\Controllers\PadronImportacionController;
+use App\Services\CatalogoModulos;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+/*
+ * Pantalla de inicio: la puerta privada del ERP para el personal del
+ * Instituto. Quien ya inició sesión va directo al tablero.
+ *
+ * Los módulos se exponen como vitrina: sin `url`, `api_salud`,
+ * `responsable` ni conteos. Antes de entrar nadie tiene por qué saber a qué
+ * dominio apunta cada sistema ni cuántas personas hay en el padrón.
+ */
+Route::get('/', function (CatalogoModulos $catalogo) {
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+
+    return Inertia::render('Inicio', [
+        'modulos' => $catalogo->todos()
+            ->map(fn (array $modulo) => Arr::only($modulo, ['slug', 'nombre', 'descripcion', 'icono', 'estado', 'categoria']))
+            ->values(),
+    ]);
+})->name('inicio');
 
 Route::middleware([
     'auth:sanctum',
@@ -24,6 +44,29 @@ Route::middleware([
     Route::get('/dashboard/modulos/{slug}', [DashboardController::class, 'acceder'])->name('dashboard.acceder');
 
     Route::redirect('/perfil', '/user/profile')->name('perfil');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tableros de módulos externos (solo lectura)
+    |--------------------------------------------------------------------------
+    |
+    | Dos permisos: `ver-modulo-tablero` aquí y `ver-{slug}` en el controlador.
+    | `datos` responde JSON y se pide desde el navegador ya pintada la página;
+    | los CSV pasan por el ERP para que el navegador nunca vea el token.
+    |
+    */
+    Route::prefix('modulos/{slug}')->name('modulos.')->middleware('permission:ver-modulo-tablero')->group(function () {
+        Route::get('/', [ModuloController::class, 'tablero'])->name('tablero');
+        Route::get('/datos', [ModuloController::class, 'datos'])->name('datos');
+        Route::get('/informes/{informe}.csv', [ModuloController::class, 'informe'])
+            ->where('informe', '[a-z_]+')
+            ->name('informe');
+
+        Route::middleware('permission:ver-modulo-datos-personales')->group(function () {
+            Route::get('/personas', [ModuloController::class, 'personas'])->name('personas');
+            Route::get('/personas/datos', [ModuloController::class, 'personasDatos'])->name('personas.datos');
+        });
+    });
 
     // Buscador global (paleta de comandos). Responde JSON, no Inertia.
     Route::get('/buscar', BuscadorController::class)

@@ -1,12 +1,14 @@
 <script setup>
 import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import ActionSection from '@/Components/ActionSection.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import DialogModal from '@/Components/DialogModal.vue';
 import InputError from '@/Components/InputError.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+
+const page = usePage();
 
 const confirmingUserDeletion = ref(false);
 const passwordInput = ref(null);
@@ -40,60 +42,59 @@ const closeModal = () => {
 <template>
     <ActionSection>
         <template #title>
-            Delete Account
+            Eliminar cuenta
         </template>
 
         <template #description>
-            Permanently delete your account.
+            Borra tu cuenta de forma permanente.
         </template>
 
         <template #content>
-            <div class="max-w-xl text-sm text-gray-600">
-                Once your account is deleted, all of its resources and data will be permanently deleted. Before deleting your account, please download any data or information that you wish to retain.
-            </div>
+            <p class="max-w-xl text-body text-ink-600">
+                Al eliminar tu cuenta se borran para siempre sus datos. Antes de hacerlo, guarda cualquier información que quieras conservar.
+            </p>
 
             <div class="mt-5">
                 <DangerButton @click="confirmUserDeletion">
-                    Delete Account
+                    Eliminar mi cuenta
                 </DangerButton>
             </div>
 
-            <!-- Delete Account Confirmation Modal -->
             <DialogModal :show="confirmingUserDeletion" @close="closeModal">
                 <template #title>
-                    Delete Account
+                    ¿Eliminar la cuenta {{ page.props.auth.user.email }}?
                 </template>
 
                 <template #content>
-                    Are you sure you want to delete your account? Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.
+                    <p>
+                        La cuenta y todos sus datos se borrarán de forma permanente; esto no se puede deshacer. Escribe tu contraseña para confirmar.
+                    </p>
 
                     <div class="mt-4">
+                        <label for="eliminar-cuenta-contrasena" class="block text-body-strong text-ink">Contraseña</label>
                         <TextInput
+                            id="eliminar-cuenta-contrasena"
                             ref="passwordInput"
                             v-model="form.password"
                             type="password"
-                            class="mt-1 block w-3/4"
-                            placeholder="Password"
+                            class="mt-1.5 block w-full sm:w-3/4"
+                            :invalido="Boolean(form.errors.password)"
+                            :aria-describedby="form.errors.password ? 'eliminar-cuenta-contrasena-error' : undefined"
                             autocomplete="current-password"
                             @keyup.enter="deleteUser"
                         />
 
-                        <InputError :message="form.errors.password" class="mt-2" />
+                        <InputError id="eliminar-cuenta-contrasena-error" :message="form.errors.password" class="mt-1.5" />
                     </div>
                 </template>
 
                 <template #footer>
                     <SecondaryButton @click="closeModal">
-                        Cancel
+                        Cancelar
                     </SecondaryButton>
 
-                    <DangerButton
-                        class="ms-3"
-                        :class="{ 'opacity-25': form.processing }"
-                        :disabled="form.processing"
-                        @click="deleteUser"
-                    >
-                        Delete Account
+                    <DangerButton :procesando="form.processing" @click="deleteUser">
+                        {{ form.processing ? 'Eliminando…' : 'Eliminar mi cuenta' }}
                     </DangerButton>
                 </template>
             </DialogModal>

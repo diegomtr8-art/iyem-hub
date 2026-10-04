@@ -6,6 +6,13 @@
  * donde el trazo fino se pierde. Si llega una clave desconocida se dibuja
  * la cuadrícula, para no romper el layout con un hueco.
  */
+// Tamaño de omisión 20px solo si quien lo usa no pasa sus propias clases:
+// así `class="h-4 w-4"` no choca con un h-5 fijo.
+import { useAttrs } from 'vue';
+
+defineOptions({ inheritAttrs: false });
+const attrs = useAttrs();
+
 defineProps({
     icono: {
         type: String,
@@ -53,7 +60,9 @@ const paths = {
 
 <template>
     <svg
-        class="h-5 w-5 shrink-0"
+        v-bind="attrs"
+        class="shrink-0"
+        :class="attrs.class ? '' : 'h-5 w-5'"
         fill="none"
         viewBox="0 0 24 24"
         stroke-width="1.75"

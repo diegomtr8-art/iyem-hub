@@ -9,15 +9,15 @@ defineProps({
 
 <template>
     <div>
-        <button v-if="as == 'button'" type="submit" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+        <button v-if="as == 'button'" type="submit" class="flex min-h-[44px] w-full items-center px-4 text-start text-body text-ink transition-colors hover:bg-surface-100 focus:outline-none focus-visible:bg-surface-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus">
             <slot />
         </button>
 
-        <a v-else-if="as =='a'" :href="href" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+        <a v-else-if="as =='a'" :href="href" class="flex min-h-[44px] items-center px-4 text-body text-ink transition-colors hover:bg-surface-100 focus:outline-none focus-visible:bg-surface-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus">
             <slot />
         </a>
 
-        <Link v-else :href="href" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+        <Link v-else :href="href" class="flex min-h-[44px] items-center px-4 text-body text-ink transition-colors hover:bg-surface-100 focus:outline-none focus-visible:bg-surface-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus">
             <slot />
         </Link>
     </div>

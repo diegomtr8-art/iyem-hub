@@ -5,6 +5,7 @@ import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
+import { token } from './paletaDatos';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -18,9 +19,9 @@ createInertiaApp({
             .mount(el);
     },
     progress: {
-        // Guinda institucional. La barra de progreso venía en el gris por
-        // omisión de Jetstream, ajeno a la identidad del instituto.
-        color: '#9F2241',
+        // Índigo del logotipo IYEM ERP, leído de la variable CSS (con
+        // respaldo en paletaDatos.js si la hoja aún no cargó).
+        color: token('--brand-500'),
     },
 });
 

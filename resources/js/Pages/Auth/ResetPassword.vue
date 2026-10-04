@@ -1,9 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
 import AuthenticationCard from '@/Components/AuthenticationCard.vue';
-import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
+import Campo from '@/Components/Campo.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 
@@ -29,57 +27,52 @@ const submit = () => {
 <template>
     <Head title="Restablecer contraseña" />
 
-    <AuthenticationCard>
-        <template #logo>
-            <AuthenticationCardLogo />
-        </template>
-
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Correo electrónico" />
+    <AuthenticationCard titulo="Crear contraseña nueva" descripcion="Elige una contraseña que no uses en otro sistema.">
+        <form class="space-y-5" novalidate @submit.prevent="submit">
+            <Campo id="email" v-slot="campo" etiqueta="Correo electrónico" :error="form.errors.email">
                 <TextInput
-                    id="email"
+                    :id="campo.id"
                     v-model="form.email"
                     type="email"
-                    class="mt-1 block w-full"
+                    inputmode="email"
+                    class="block w-full"
+                    :invalido="campo.invalido"
+                    :aria-describedby="campo.describedby"
                     required
-                    autofocus
                     autocomplete="username"
                 />
-                <InputError class="mt-2" :message="form.errors.email" />
-            </div>
+            </Campo>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Contraseña" />
+            <Campo id="password" v-slot="campo" etiqueta="Contraseña nueva" :error="form.errors.password">
                 <TextInput
-                    id="password"
+                    :id="campo.id"
                     v-model="form.password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="block w-full"
+                    :invalido="campo.invalido"
+                    :aria-describedby="campo.describedby"
                     required
+                    autofocus
                     autocomplete="new-password"
                 />
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
+            </Campo>
 
-            <div class="mt-4">
-                <InputLabel for="password_confirmation" value="Confirmar contraseña" />
+            <Campo id="password_confirmation" v-slot="campo" etiqueta="Confirma la contraseña" :error="form.errors.password_confirmation">
                 <TextInput
-                    id="password_confirmation"
+                    :id="campo.id"
                     v-model="form.password_confirmation"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="block w-full"
+                    :invalido="campo.invalido"
+                    :aria-describedby="campo.describedby"
                     required
                     autocomplete="new-password"
                 />
-                <InputError class="mt-2" :message="form.errors.password_confirmation" />
-            </div>
+            </Campo>
 
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Restablecer contraseña
-                </PrimaryButton>
-            </div>
+            <PrimaryButton class="w-full" :procesando="form.processing">
+                {{ form.processing ? 'Guardando…' : 'Guardar contraseña' }}
+            </PrimaryButton>
         </form>
     </AuthenticationCard>
 </template>

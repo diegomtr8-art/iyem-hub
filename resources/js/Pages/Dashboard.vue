@@ -7,12 +7,14 @@ import IconoModulo from '@/Components/IconoModulo.vue';
 import IconoNav from '@/Components/IconoNav.vue';
 import TarjetaKpi from '@/Components/TarjetaKpi.vue';
 import TarjetaModulo from '@/Components/TarjetaModulo.vue';
+import { fechaHora, fechaLarga, hace, numero } from '@/formato';
 
 const props = defineProps({
     modulos: { type: Array, default: () => [] },
     categorias: { type: Array, default: () => [] },
     indicadores: { type: Object, default: () => ({}) },
     actividades: { type: Array, default: () => [] },
+    // null para quien no es Super Admin: entonces la sección no existe.
     actividadesPlataforma: { type: Array, default: null },
 });
 
@@ -30,330 +32,305 @@ const saludo = computed(() => {
     return 'Buenas noches';
 });
 
-const fechaLarga = computed(() =>
-    new Date().toLocaleDateString('es-MX', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-    }),
-);
+const hoy = fechaLarga();
 
 /* ------------------------------------------------------------------ *
  * Semáforo de disponibilidad
  *
- * Se pide después de montar la página. Hasta que llega, cada tarjeta
- * muestra el punto en gris pulsante: "consultando", no "en línea".
+ * Se pide después de montar la página: sondear los subdominios durante el
+ * render dejaría el tablero en blanco cada vez que uno no contestara. Hasta
+ * que llega, cada tarjeta dice "Consultando…", no "En línea".
  * ------------------------------------------------------------------ */
 
 const salud = ref({});
 const saludCargada = ref(false);
+const saludFallo = ref(false);
 
 onMounted(async () => {
     try {
         const { data } = await axios.get(route('dashboard.salud'));
         salud.value = data.salud ?? {};
     } catch {
-        // Si el sondeo falla, los puntos se quedan en "consultando". Es
-        // preferible a afirmar que todo está caído por un error nuestro.
+        // Si el sondeo falla, las tarjetas dicen "Sin datos". Es preferible a
+        // afirmar que todo está caído por un error nuestro.
+        saludFallo.value = true;
     } finally {
         saludCargada.value = true;
     }
 });
 
-const modulosEnLinea = computed(() => {
-    if (!saludCargada.value) return null;
+const resumenSalud = computed(() => {
+    if (!saludCargada.value || saludFallo.value) return null;
 
-    return props.modulos.filter((modulo) => {
-        if (!modulo.navegable) return false;
-        const estado = salud.value[modulo.slug]?.estado;
-        // Un módulo sin endpoint de salud se cuenta como disponible: el hub
-        // no tiene forma de desmentirlo y sí sabe que está en producción.
-        return estado === 'en_linea' || estado === 'sin_monitoreo';
-    }).length;
+    const navegables = props.modulos.filter((m) => m.navegable);
+    const enLinea = navegables.filter((m) => salud.value[m.slug]?.estado === 'en_linea').length;
+    const caidos = navegables.filter((m) => salud.value[m.slug]?.estado === 'caido').length;
+
+    return { enLinea, caidos, total: navegables.length };
 });
 
-const sinMonitoreo = computed(
-    () => props.modulos.filter(
-        (m) => m.navegable && salud.value[m.slug]?.estado === 'sin_monitoreo',
-    ).length,
-);
-
 /* ------------------------------------------------------------------ *
- * Cuadrícula: filtro por categoría y modo de vista
+ * Módulos agrupados por categoría (las que manda el backend, en su orden)
  * ------------------------------------------------------------------ */
-
-const categoriaActiva = ref('todas');
-
-const CLAVE_VISTA = 'iyem.dashboard.vista';
 
 const vista = ref('tarjetas');
 
-onMounted(() => {
-    try {
-        const guardada = localStorage.getItem(CLAVE_VISTA);
-        if (guardada === 'lista' || guardada === 'tarjetas') vista.value = guardada;
-    } catch {
-        // Navegador con almacenamiento bloqueado: se queda en tarjetas.
-    }
-});
-
-const cambiarVista = (nueva) => {
-    vista.value = nueva;
-    try {
-        localStorage.setItem(CLAVE_VISTA, nueva);
-    } catch {
-        // Sin persistencia, pero la vista cambia igual en esta sesión.
-    }
-};
-
-const modulosFiltrados = computed(() =>
-    categoriaActiva.value === 'todas'
-        ? props.modulos
-        : props.modulos.filter((m) => m.categoria === categoriaActiva.value),
+const grupos = computed(() =>
+    props.categorias
+        .map((categoria) => ({
+            ...categoria,
+            modulos: props.modulos.filter((m) => m.categoria === categoria.clave),
+        }))
+        .filter((grupo) => grupo.modulos.length),
 );
+
+const hayResponsables = computed(() => props.modulos.some((m) => !m.navegable && m.responsable));
 
 /* ------------------------------------------------------------------ *
- * Actividad reciente
+ * Actividad
  * ------------------------------------------------------------------ */
 
-const pestanaActividad = ref('mia');
+const modulosPorSlug = computed(() => Object.fromEntries(props.modulos.map((m) => [m.slug, m])));
 
-const nombresDeModulo = computed(
-    () => Object.fromEntries(props.modulos.map((m) => [m.slug, m])),
-);
-
-const formateadorRelativo = new Intl.RelativeTimeFormat('es-MX', { numeric: 'auto' });
-
-const UNIDADES = [
-    ['year', 31536000],
-    ['month', 2592000],
-    ['day', 86400],
-    ['hour', 3600],
-    ['minute', 60],
-];
-
-const hace = (fecha) => {
-    const segundos = (new Date(fecha) - new Date()) / 1000;
-
-    for (const [unidad, tamano] of UNIDADES) {
-        if (Math.abs(segundos) >= tamano) {
-            return formateadorRelativo.format(Math.round(segundos / tamano), unidad);
-        }
-    }
-
-    return 'hace un momento';
-};
-
-const fechaExacta = (fecha) =>
-    new Date(fecha).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
-
-const actividadVisible = computed(() =>
-    pestanaActividad.value === 'plataforma' && props.actividadesPlataforma
-        ? props.actividadesPlataforma
-        : props.actividades,
-);
+const nombreModulo = (slug) => modulosPorSlug.value[slug]?.nombre ?? slug;
+const iconoModulo = (slug) => modulosPorSlug.value[slug]?.icono ?? 'squares-2x2';
 </script>
 
 <template>
-    <AppLayout title="Dashboard">
+    <AppLayout title="Tablero">
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                Dashboard
-            </h2>
+            <span>Tablero</span>
         </template>
 
-        <!-- ============================================================
-             Hero: saludo, fecha e indicadores globales
-             ============================================================ -->
-        <section class="relative overflow-hidden rounded-2xl bg-iyem-gradient shadow-soft-lg">
-            <div class="pointer-events-none absolute inset-0 bg-iyem-mesh" aria-hidden="true" />
-            <div class="patron-puntos pointer-events-none absolute inset-0 text-white/10" aria-hidden="true" />
-
-            <div class="relative px-5 py-7 sm:px-8 sm:py-8">
-                <p class="text-xs font-medium uppercase tracking-widest text-white/60">
-                    Plataforma central IYEM
-                </p>
-                <h1 class="mt-1.5 text-2xl font-bold text-white sm:text-3xl">
+        <div class="mx-auto max-w-7xl space-y-8">
+            <!-- ============================================================
+                 Saludo
+                 ============================================================ -->
+            <section aria-labelledby="titulo-saludo">
+                <h1 id="titulo-saludo" class="text-title text-ink">
                     {{ saludo }}, {{ usuario.name }}
                 </h1>
-                <p class="mt-1 text-sm capitalize text-white/70">
-                    {{ fechaLarga }}
-                </p>
+                <p class="mt-1 text-small text-ink-600">Hoy es {{ hoy }}.</p>
+            </section>
 
-                <div class="mt-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+            <!-- ============================================================
+                 Indicadores
+                 Cada cifra lleva su referencia: no hay periodo anterior en el
+                 backend, así que la referencia es la fecha del corte.
+                 ============================================================ -->
+            <section aria-label="Indicadores">
+                <div class="grid grid-cols-2 gap-4 sm:gap-6 xl:grid-cols-4">
                     <TarjetaKpi
                         etiqueta="Personas en el padrón"
-                        icono="user"
-                        :valor="indicadores.personas"
+                        :valor="indicadores.personas ?? null"
+                        :referencia="`Al ${hoy}`"
                     />
                     <TarjetaKpi
                         etiqueta="Trámites activos"
-                        icono="lista"
-                        :valor="indicadores.tramites_activos"
-                        detalle="En todos los módulos"
+                        :valor="indicadores.tramites_activos ?? null"
+                        :referencia="`En todos los módulos, al ${hoy}`"
                     />
                     <TarjetaKpi
-                        etiqueta="Módulos en línea"
-                        icono="stack"
-                        :valor="modulosEnLinea === null ? null : `${modulosEnLinea} / ${indicadores.modulos_visibles}`"
-                        :detalle="sinMonitoreo ? `${sinMonitoreo} sin monitoreo` : null"
+                        etiqueta="Módulos visibles"
+                        :valor="indicadores.modulos_visibles ?? null"
+                        referencia="Con permiso para tu cuenta"
                     />
                     <TarjetaKpi
-                        etiqueta="Accesos (24 h)"
-                        icono="reloj"
-                        :valor="indicadores.accesos_24h"
+                        etiqueta="Módulos navegables"
+                        :valor="indicadores.modulos_navegables ?? null"
+                        :referencia="`De ${numero(indicadores.modulos_visibles)} visibles; el resto aún no abre`"
                     />
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- ============================================================
-             Cuadrícula de módulos
-             ============================================================ -->
-        <section class="mt-8">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <h2 class="text-lg font-semibold text-gray-800">
-                    Módulos
-                </h2>
+            <!-- ============================================================
+                 Módulos por categoría
+                 ============================================================ -->
+            <section aria-labelledby="titulo-modulos">
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                        <h2 id="titulo-modulos" class="text-title text-ink">Módulos</h2>
+                        <p class="mt-1 text-small text-ink-600" aria-live="polite">
+                            <template v-if="resumenSalud">
+                                <span class="font-mono">{{ resumenSalud.enLinea }}</span> de
+                                <span class="font-mono">{{ resumenSalud.total }}</span> en línea
+                                <template v-if="resumenSalud.caidos">
+                                    · <span class="font-mono">{{ resumenSalud.caidos }}</span> sin respuesta
+                                </template>
+                            </template>
+                            <template v-else-if="saludFallo">No se pudo consultar la disponibilidad; recarga la página para intentarlo de nuevo.</template>
+                            <template v-else>Consultando disponibilidad…</template>
+                        </p>
+                    </div>
 
-                <!-- Conmutador de vista. 44 px de alto para cumplir el
-                     mínimo táctil de Apple. -->
-                <div
-                    class="inline-flex rounded-xl border border-iyem-200 bg-white p-1"
-                    role="group"
-                    aria-label="Forma de ver los módulos"
-                >
-                    <button
-                        v-for="opcion in [
-                            { clave: 'tarjetas', icono: 'tarjetas', texto: 'Tarjetas' },
-                            { clave: 'lista', icono: 'lista', texto: 'Lista' },
-                        ]"
-                        :key="opcion.clave"
-                        type="button"
-                        class="flex h-9 min-w-[2.75rem] items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                        :class="vista === opcion.clave ? 'bg-iyem-claro text-iyem-700' : 'text-gray-500 hover:text-gray-700'"
-                        :aria-pressed="vista === opcion.clave"
-                        @click="cambiarVista(opcion.clave)"
-                    >
-                        <IconoNav :icono="opcion.icono" class="h-4 w-4" />
-                        <span class="sr-only sm:not-sr-only">{{ opcion.texto }}</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Chips de categoría. Scroll horizontal propio en móvil para
-                 que nunca desplacen el body. -->
-            <div
-                v-if="categorias.length > 1"
-                class="scrollbar-fina -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1"
-            >
-                <button
-                    v-for="chip in [{ clave: 'todas', nombre: 'Todas', total: modulos.length }, ...categorias]"
-                    :key="chip.clave"
-                    type="button"
-                    class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario focus-visible:ring-offset-2"
-                    :class="categoriaActiva === chip.clave
-                        ? 'border-transparent bg-iyem-gradient text-white shadow-glow'
-                        : 'border-iyem-200 bg-white text-gray-600 hover:border-iyem-300 hover:text-iyem-700'"
-                    :aria-pressed="categoriaActiva === chip.clave"
-                    @click="categoriaActiva = chip.clave"
-                >
-                    {{ chip.nombre }}
-                    <span class="tabular-nums opacity-60">{{ chip.total }}</span>
-                </button>
-            </div>
-
-            <div
-                v-if="modulosFiltrados.length"
-                class="mt-5 grid gap-4"
-                :class="vista === 'lista'
-                    ? 'grid-cols-1 lg:grid-cols-2'
-                    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'"
-            >
-                <TarjetaModulo
-                    v-for="modulo in modulosFiltrados"
-                    :key="modulo.slug"
-                    :modulo="modulo"
-                    :salud="salud[modulo.slug] ?? null"
-                    :compacto="vista === 'lista'"
-                />
-            </div>
-
-            <p v-else class="mt-5 rounded-2xl border border-dashed border-iyem-200 px-4 py-8 text-center text-sm text-gray-500">
-                {{ modulos.length
-                    ? 'No hay módulos en esta categoría.'
-                    : 'No tienes módulos asignados. Contacta a un administrador.' }}
-            </p>
-        </section>
-
-        <!-- ============================================================
-             Actividad reciente
-             ============================================================ -->
-        <section class="mt-10">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <h2 class="text-lg font-semibold text-gray-800">
-                    Actividad reciente
-                </h2>
-
-                <div
-                    v-if="actividadesPlataforma"
-                    class="inline-flex rounded-xl border border-iyem-200 bg-white p-1"
-                    role="tablist"
-                >
-                    <button
-                        v-for="pestana in [
-                            { clave: 'mia', texto: 'Mis accesos' },
-                            { clave: 'plataforma', texto: 'Toda la plataforma' },
-                        ]"
-                        :key="pestana.clave"
-                        type="button"
-                        role="tab"
-                        class="h-9 rounded-lg px-3 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                        :class="pestanaActividad === pestana.clave ? 'bg-iyem-claro text-iyem-700' : 'text-gray-500 hover:text-gray-700'"
-                        :aria-selected="pestanaActividad === pestana.clave"
-                        @click="pestanaActividad = pestana.clave"
-                    >
-                        {{ pestana.texto }}
-                    </button>
-                </div>
-            </div>
-
-            <div class="mt-4 overflow-hidden rounded-2xl border border-iyem-200 bg-white shadow-soft">
-                <ul v-if="actividadVisible.length" class="divide-y divide-iyem-100">
-                    <li
-                        v-for="actividad in actividadVisible"
-                        :key="actividad.id"
-                        class="flex items-center gap-3 px-4 py-3.5"
-                    >
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-iyem-claro text-iyem-primario">
-                            <IconoModulo :icono="nombresDeModulo[actividad.modulo]?.icono ?? 'squares-2x2'" class="h-5 w-5" />
-                        </div>
-
-                        <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm font-medium text-gray-700">
-                                {{ nombresDeModulo[actividad.modulo]?.nombre ?? actividad.modulo }}
-                            </p>
-                            <p class="truncate text-xs text-gray-400">
-                                <span v-if="actividad.usuario">{{ actividad.usuario }} · </span>
-                                <span class="tabular-nums">{{ actividad.ip_address ?? 'IP no registrada' }}</span>
-                            </p>
-                        </div>
-
-                        <time
-                            class="shrink-0 text-xs text-gray-400"
-                            :datetime="actividad.accedido_at"
-                            :title="fechaExacta(actividad.accedido_at)"
+                    <div class="inline-flex rounded-md border border-line-strong bg-surface p-0.5" role="group" aria-label="Forma de ver los módulos">
+                        <button
+                            v-for="opcion in [
+                                { clave: 'tarjetas', icono: 'tarjetas', texto: 'Tarjetas' },
+                                { clave: 'lista', icono: 'lista', texto: 'Lista' },
+                            ]"
+                            :key="opcion.clave"
+                            type="button"
+                            class="toque-minimo flex items-center justify-center gap-1.5 rounded-sm px-3 text-small font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                            :class="vista === opcion.clave ? 'bg-surface-brand text-action' : 'text-ink-600 hover:text-ink'"
+                            :aria-pressed="vista === opcion.clave ? 'true' : 'false'"
+                            @click="vista = opcion.clave"
                         >
-                            {{ hace(actividad.accedido_at) }}
-                        </time>
-                    </li>
-                </ul>
+                            <IconoNav :icono="opcion.icono" class="h-4 w-4" />
+                            <span class="sr-only sm:not-sr-only">{{ opcion.texto }}</span>
+                        </button>
+                    </div>
+                </div>
 
-                <p v-else class="px-4 py-8 text-center text-sm text-gray-400">
-                    Aún no hay actividad registrada.
+                <div v-if="grupos.length" class="mt-6 space-y-8">
+                    <section v-for="grupo in grupos" :key="grupo.clave" :aria-labelledby="`grupo-${grupo.clave}`">
+                        <h3 :id="`grupo-${grupo.clave}`" class="flex items-baseline gap-2 border-b border-line pb-2 text-overline text-ink-600">
+                            {{ grupo.nombre }}
+                            <span class="font-mono text-caption">{{ grupo.total }}</span>
+                        </h3>
+                        <div
+                            class="mt-4 grid gap-4 sm:gap-6"
+                            :class="vista === 'lista' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'"
+                        >
+                            <TarjetaModulo
+                                v-for="modulo in grupo.modulos"
+                                :key="modulo.slug"
+                                :modulo="modulo"
+                                :salud="salud[modulo.slug] ?? (saludFallo ? { estado: 'sin_datos' } : null)"
+                                :compacto="vista === 'lista'"
+                            />
+                        </div>
+                    </section>
+                </div>
+
+                <div v-else class="mt-6 rounded-lg border border-line bg-surface p-6">
+                    <p class="text-body-strong text-ink">No tienes módulos asignados.</p>
+                    <p class="mt-1 text-small text-ink-600">
+                        Pide al administrador de la plataforma que te dé permiso sobre los módulos con los que trabajas.
+                    </p>
+                </div>
+
+                <p v-if="hayResponsables" class="mt-4 text-caption text-ink-600">
+                    Las áreas responsables que aparecen en los módulos no disponibles son preliminares y están pendientes de confirmar con el Instituto.
                 </p>
-            </div>
-        </section>
+            </section>
+
+            <!-- ============================================================
+                 Actividad reciente del usuario
+                 ============================================================ -->
+            <section aria-labelledby="titulo-actividad">
+                <h2 id="titulo-actividad" class="text-title text-ink">Tu actividad reciente</h2>
+                <p class="mt-1 text-small text-ink-600">Los últimos accesos que hiciste a módulos desde este tablero.</p>
+
+                <div class="mt-4 overflow-hidden rounded-lg border border-line bg-surface shadow-sm">
+                    <template v-if="actividades.length">
+                        <!-- Teléfono: lista -->
+                        <ul class="divide-y divide-line sm:hidden">
+                            <li v-for="actividad in actividades" :key="actividad.id" class="flex items-center gap-3 px-4 py-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-brand text-action">
+                                    <IconoModulo :icono="iconoModulo(actividad.modulo)" class="h-5 w-5" />
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-body-strong text-ink">{{ nombreModulo(actividad.modulo) }}</p>
+                                    <p class="truncate font-mono text-small text-ink-600">{{ actividad.ip_address ?? 'IP no registrada' }}</p>
+                                </div>
+                                <time class="shrink-0 text-right" :datetime="actividad.accedido_at">
+                                    <span class="block font-mono text-small text-ink">{{ fechaHora(actividad.accedido_at) }}</span>
+                                    <span class="block text-caption text-ink-600">{{ hace(actividad.accedido_at) }}</span>
+                                </time>
+                            </li>
+                        </ul>
+
+                        <!-- Escritorio: tabla -->
+                        <table class="hidden w-full text-left sm:table">
+                            <thead class="bg-surface-50">
+                                <tr>
+                                    <th scope="col" class="px-3 py-2 text-overline text-ink-600">Módulo</th>
+                                    <th scope="col" class="px-3 py-2 text-overline text-ink-600">IP</th>
+                                    <th scope="col" class="px-3 py-2 text-overline text-ink-600">Fecha</th>
+                                    <th scope="col" class="px-3 py-2 text-overline text-ink-600"><span class="sr-only">Hace</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="actividad in actividades" :key="actividad.id" class="border-t border-line hover:bg-surface-100">
+                                    <td class="h-11 px-3 text-body text-ink">
+                                        <span class="flex items-center gap-2">
+                                            <IconoModulo :icono="iconoModulo(actividad.modulo)" class="h-4 w-4 text-ink-600" />
+                                            {{ nombreModulo(actividad.modulo) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-3 font-mono text-small text-ink-600">{{ actividad.ip_address ?? 'No registrada' }}</td>
+                                    <td class="px-3 text-number text-ink">
+                                        <time :datetime="actividad.accedido_at">{{ fechaHora(actividad.accedido_at) }}</time>
+                                    </td>
+                                    <td class="px-3 text-small text-ink-600">{{ hace(actividad.accedido_at) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </template>
+
+                    <div v-else class="p-6">
+                        <p class="text-body-strong text-ink">Sin accesos registrados todavía.</p>
+                        <p class="mt-1 text-small text-ink-600">
+                            Cuando abras un módulo desde este tablero, el acceso quedará anotado aquí con su fecha e IP.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 Bitácora de la plataforma — solo Super Admin.
+                 Para cualquier otro rol el backend manda null y la sección
+                 no se pinta: ni tabla vacía ni hueco.
+                 ============================================================ -->
+            <section v-if="actividadesPlataforma" aria-labelledby="titulo-bitacora">
+                <h2 id="titulo-bitacora" class="text-title text-ink">Bitácora de la plataforma</h2>
+                <p class="mt-1 text-small text-ink-600">Los últimos 30 accesos de todas las cuentas. Solo la ve la administración.</p>
+
+                <div class="mt-4 overflow-hidden rounded-lg border border-line bg-surface shadow-sm">
+                    <template v-if="actividadesPlataforma.length">
+                        <ul class="divide-y divide-line sm:hidden">
+                            <li v-for="actividad in actividadesPlataforma" :key="actividad.id" class="px-4 py-3">
+                                <div class="flex items-baseline justify-between gap-3">
+                                    <p class="truncate text-body-strong text-ink">{{ actividad.usuario }}</p>
+                                    <time class="shrink-0 font-mono text-small text-ink" :datetime="actividad.accedido_at">{{ fechaHora(actividad.accedido_at) }}</time>
+                                </div>
+                                <p class="mt-0.5 truncate text-small text-ink-600">
+                                    {{ nombreModulo(actividad.modulo) }} · <span class="font-mono">{{ actividad.ip_address ?? 'IP no registrada' }}</span>
+                                </p>
+                            </li>
+                        </ul>
+
+                        <div class="scrollbar-fina hidden max-h-[480px] overflow-y-auto sm:block">
+                            <table class="w-full text-left">
+                                <thead class="sticky top-0 bg-surface-50">
+                                    <tr>
+                                        <th scope="col" class="px-3 py-2 text-overline text-ink-600">Usuario</th>
+                                        <th scope="col" class="px-3 py-2 text-overline text-ink-600">Módulo</th>
+                                        <th scope="col" class="px-3 py-2 text-overline text-ink-600">IP</th>
+                                        <th scope="col" class="px-3 py-2 text-overline text-ink-600">Fecha</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="actividad in actividadesPlataforma" :key="actividad.id" class="border-t border-line hover:bg-surface-100">
+                                        <td class="h-11 px-3 text-body text-ink">{{ actividad.usuario }}</td>
+                                        <td class="px-3 text-body text-ink-600">{{ nombreModulo(actividad.modulo) }}</td>
+                                        <td class="px-3 font-mono text-small text-ink-600">{{ actividad.ip_address ?? 'No registrada' }}</td>
+                                        <td class="px-3 text-number text-ink">
+                                            <time :datetime="actividad.accedido_at">{{ fechaHora(actividad.accedido_at) }}</time>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+
+                    <div v-else class="p-6">
+                        <p class="text-body-strong text-ink">La plataforma no tiene accesos registrados todavía.</p>
+                        <p class="mt-1 text-small text-ink-600">Los accesos aparecen aquí en cuanto alguien abre un módulo desde el tablero.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
     </AppLayout>
 </template>

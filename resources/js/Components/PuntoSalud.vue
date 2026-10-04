@@ -4,9 +4,12 @@ import { computed } from 'vue';
 /**
  * Semáforo de disponibilidad de un módulo.
  *
- * Cuatro estados, no dos: mientras el sondeo viaja se muestra "consultando",
+ * Cuatro estados, no dos: mientras el sondeo viaja se muestra "Consultando",
  * y un módulo sin endpoint de salud se marca como no monitoreado. Pintarlo
  * verde por omisión sería afirmar algo que el hub no sabe.
+ *
+ * Punto + texto: el color nunca es la única señal. `conTexto` en false deja
+ * solo el punto (con su aria-label) para espacios muy estrechos.
  */
 const props = defineProps({
     estado: {
@@ -17,37 +20,38 @@ const props = defineProps({
         type: Number,
         default: null,
     },
+    conTexto: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 const estilos = {
-    en_linea: { color: 'bg-iyem-exito', anillo: 'bg-iyem-exito/30', texto: 'En línea' },
-    caido: { color: 'bg-iyem-error', anillo: 'bg-iyem-error/30', texto: 'Sin respuesta' },
-    sin_monitoreo: { color: 'bg-gray-300', anillo: 'bg-transparent', texto: 'Sin monitoreo' },
+    en_linea: { punto: 'bg-success', texto: 'En línea' },
+    caido: { punto: 'bg-danger', texto: 'Sin respuesta' },
+    sin_monitoreo: { punto: 'border-2 border-ink-400 bg-transparent', texto: 'Sin monitoreo' },
+    // El sondeo mismo falló: no sabemos nada del módulo.
+    sin_datos: { punto: 'border-2 border-ink-400 bg-transparent', texto: 'Sin datos' },
 };
 
 const estilo = computed(() => estilos[props.estado] ?? null);
 
+const texto = computed(() => estilo.value?.texto ?? 'Consultando…');
+
 const titulo = computed(() => {
-    if (!estilo.value) return 'Consultando disponibilidad…';
     if (props.estado === 'en_linea' && props.ms) return `En línea (${props.ms} ms)`;
-    return estilo.value.texto;
+    return estilo.value?.texto ?? 'Consultando disponibilidad…';
 });
 </script>
 
 <template>
-    <span class="relative flex h-2.5 w-2.5 shrink-0" :title="titulo" role="img" :aria-label="titulo">
-        <!-- Sin respuesta todavía: pulso neutro para que se note que se está consultando. -->
+    <span class="inline-flex shrink-0 items-center gap-1.5 text-caption text-ink-600" :title="titulo">
         <span
-            v-if="!estilo"
-            class="h-2.5 w-2.5 animate-pulse rounded-full bg-gray-300"
+            class="h-2 w-2 shrink-0 rounded-full"
+            :class="estilo ? estilo.punto : 'animate-pulse border-2 border-ink-400'"
+            aria-hidden="true"
         />
-        <template v-else>
-            <span
-                v-if="estado === 'en_linea'"
-                class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-                :class="estilo.anillo"
-            />
-            <span class="relative inline-flex h-2.5 w-2.5 rounded-full" :class="estilo.color" />
-        </template>
+        <span v-if="conTexto">{{ texto }}</span>
+        <span v-else class="sr-only">{{ titulo }}</span>
     </span>
 </template>

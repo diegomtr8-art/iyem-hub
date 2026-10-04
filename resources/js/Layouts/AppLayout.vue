@@ -1,11 +1,12 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import IconoNav from '@/Components/IconoNav.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import BuscadorGlobal from '@/Components/BuscadorGlobal.vue';
+import InterruptorTema from '@/Components/InterruptorTema.vue';
+import MarcaErp from '@/Components/MarcaErp.vue';
 
 defineProps({
     title: String,
@@ -29,6 +30,20 @@ const logout = () => {
 };
 
 const esActivo = (nombreRuta) => route().current(nombreRuta) || route().current(`${nombreRuta}.*`);
+
+// Un módulo interno del sidebar (p. ej. /padron) está activo cuando la URL
+// actual cae bajo su ruta. Los externos pasan por dashboard.acceder y nunca
+// son la página actual.
+const moduloActivo = (modulo) => {
+    try {
+        const ruta = new URL(modulo.url, window.location.origin);
+        if (ruta.origin !== window.location.origin || ruta.pathname.startsWith('/dashboard')) return false;
+        const actual = page.url.split('?')[0];
+        return actual === ruta.pathname || actual.startsWith(`${ruta.pathname}/`);
+    } catch {
+        return false;
+    }
+};
 
 const iniciales = () => {
     const n = user().name?.[0] ?? '';
@@ -91,160 +106,199 @@ const destinosInferiores = computed(() => {
 
     return destinos.slice(0, 5);
 });
+
+// Ítems del sidebar. El activo lleva fondo plano brand-600: sin degradado
+// ni resplandor.
+const claseItem = (activo) => [
+    'flex min-h-[44px] items-center gap-3 rounded-md px-3 text-body transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-brand-900',
+    activo ? 'bg-brand-600 font-semibold text-white' : 'text-ink-600 hover:bg-white/5 hover:text-ink',
+];
 </script>
 
 <template>
-    <div class="min-h-screen bg-iyem-neutro">
+    <div class="min-h-screen bg-surface-50">
         <Head :title="title" />
 
-        <!-- Overlay móvil -->
+        <!-- Primer elemento con Tab: evita recorrer todo el menú en cada página. -->
+        <a
+            href="#contenido"
+            class="sr-only z-50 rounded-md bg-action px-4 py-2 text-body-strong text-action-ink focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
+        >
+            Saltar al contenido
+        </a>
+
+        <!-- Telón del cajón en móvil -->
         <div
             v-show="sidebarOpen"
-            class="fixed inset-0 z-30 bg-tinta-950/60 backdrop-blur-sm lg:hidden"
+            class="fixed inset-0 z-30 bg-brand-900/60 lg:hidden"
+            aria-hidden="true"
             @click="sidebarOpen = false"
         />
 
-        <!-- Sidebar -->
+        <!--
+            Sidebar. Lleva data-theme="dark": sobre brand-900 rigen los tokens
+            del tema oscuro (tinta clara, foco índigo claro) en los dos temas.
+        -->
         <aside
-            class="pad-seguro-abajo fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col bg-tinta-gradient text-white shadow-soft-lg transition-transform duration-200 lg:translate-x-0"
-            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+            id="menu-principal"
+            data-theme="dark"
+            class="pad-seguro-abajo fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col border-r border-line bg-brand-900 text-ink transition-transform duration-200 lg:translate-x-0"
+            :class="sidebarOpen ? 'translate-x-0 shadow-lg' : '-translate-x-full'"
+            aria-label="Menú principal"
         >
-            <div class="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-white/10 px-6">
-                <Link :href="route('dashboard')">
-                    <ApplicationLogo variant="blanco" />
-                </Link>
-                <button
-                    type="button"
-                    class="toque-minimo -mr-3 flex items-center justify-center text-white/60 transition hover:text-white lg:hidden"
-                    aria-label="Cerrar el menú"
-                    @click="sidebarOpen = false"
-                >
-                    <IconoNav icono="close" class="h-5 w-5" />
-                </button>
+            <div class="pad-seguro-arriba shrink-0 border-b border-white/10">
+                <div class="flex h-16 items-center justify-between gap-3 px-6">
+                    <Link
+                        :href="route('dashboard')"
+                        class="rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-brand-900"
+                        aria-label="IYEM ERP, ir al tablero"
+                    >
+                        <MarcaErp tamano="sm" sobre-oscuro />
+                    </Link>
+                    <button
+                        type="button"
+                        class="toque-minimo -mr-3 flex items-center justify-center rounded-md text-ink-600 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus lg:hidden"
+                        aria-label="Cerrar el menú"
+                        @click="sidebarOpen = false"
+                    >
+                        <IconoNav icono="close" class="h-5 w-5" />
+                    </button>
+                </div>
             </div>
 
-            <div class="flex items-center gap-3 border-b border-white/10 px-6 py-5">
-                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-iyem-gradient text-sm font-bold shadow-glow">
+            <div class="flex items-center gap-3 border-b border-white/10 px-6 py-4">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-600 text-small font-semibold text-white" aria-hidden="true">
                     {{ iniciales() }}
                 </div>
                 <div class="min-w-0">
-                    <p class="truncate text-sm font-semibold text-white">
+                    <p class="truncate text-body-strong text-ink">
                         {{ user().nombre_completo ?? user().name }}
                     </p>
-                    <p class="mt-0.5 inline-flex items-center rounded-full bg-white/10 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-iyem-300">
+                    <p class="truncate text-caption text-ink-600">
                         {{ user().rol_actual ?? 'Sin rol asignado' }}
                     </p>
                 </div>
             </div>
 
-            <nav class="scrollbar-fina scroll-suave-ios flex-1 space-y-1 overflow-y-auto px-4 py-5">
-                <Link
-                    :href="route('dashboard')"
-                    class="group flex min-h-[44px] items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                    :class="esActivo('dashboard') ? 'bg-iyem-gradient text-white shadow-glow' : 'text-white/70 hover:bg-white/5 hover:text-white'"
-                >
-                    <IconoNav icono="grid" />
-                    Dashboard
-                </Link>
+            <nav class="scrollbar-fina scroll-suave-ios flex-1 overflow-y-auto px-4 py-5" aria-label="Secciones">
+                <p class="px-3 pb-2 text-overline text-ink-600">General</p>
+                <div class="space-y-1">
+                    <Link :href="route('dashboard')" :class="claseItem(esActivo('dashboard'))" :aria-current="esActivo('dashboard') ? 'page' : undefined">
+                        <IconoNav icono="grid" />
+                        Tablero
+                    </Link>
+                    <Link
+                        v-if="user().es_super_admin"
+                        :href="route('admin.index')"
+                        :class="claseItem(esActivo('admin'))"
+                        :aria-current="esActivo('admin') ? 'page' : undefined"
+                    >
+                        <IconoNav icono="shield" />
+                        Administración
+                    </Link>
+                </div>
 
-                <div v-if="page.props.modulosSidebar.length">
+                <div v-if="page.props.modulosSidebar.length" class="mt-6">
                     <button
                         type="button"
-                        class="flex min-h-[44px] w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/70 transition hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                        :aria-expanded="modulosAbiertos"
+                        class="flex min-h-[44px] w-full items-center justify-between rounded-md px-3 text-overline text-ink-600 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-brand-900"
+                        :aria-expanded="modulosAbiertos ? 'true' : 'false'"
+                        aria-controls="lista-modulos"
                         @click="modulosAbiertos = !modulosAbiertos"
                     >
-                        <span class="flex items-center gap-3">
-                            <IconoNav icono="stack" />
-                            Módulos
-                        </span>
+                        Módulos
                         <IconoNav icono="chevron" class="h-4 w-4 transition-transform" :class="modulosAbiertos ? 'rotate-180' : ''" />
                     </button>
-                    <div v-show="modulosAbiertos" class="mt-1 space-y-0.5 border-l border-white/10 pl-5">
+                    <div v-show="modulosAbiertos" id="lista-modulos" class="mt-1 space-y-1">
                         <Link
                             v-for="modulo in page.props.modulosSidebar"
                             :key="modulo.slug"
                             :href="modulo.url"
-                            class="flex min-h-[40px] items-center rounded-lg px-3 py-2 text-sm text-white/60 transition hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
+                            :class="claseItem(moduloActivo(modulo))"
+                            :aria-current="moduloActivo(modulo) ? 'page' : undefined"
                         >
+                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-300" aria-hidden="true" />
                             {{ modulo.nombre }}
                         </Link>
                     </div>
                 </div>
 
-                <Link
-                    v-if="user().es_super_admin"
-                    :href="route('admin.index')"
-                    class="flex min-h-[44px] items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                    :class="esActivo('admin') ? 'bg-iyem-gradient text-white shadow-glow' : 'text-white/70 hover:bg-white/5 hover:text-white'"
-                >
-                    <IconoNav icono="shield" />
-                    Panel de Administración
-                </Link>
-
-                <Link
-                    :href="route('perfil')"
-                    class="flex min-h-[44px] items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white/70 transition hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                >
+                <p class="mt-6 px-3 pb-2 text-overline text-ink-600">Cuenta</p>
+                <Link :href="route('perfil')" :class="claseItem(esActivo('profile'))" :aria-current="esActivo('profile') ? 'page' : undefined">
                     <IconoNav icono="user" />
-                    Mi Perfil
+                    Mi perfil
                 </Link>
             </nav>
 
             <div class="border-t border-white/10 p-4">
                 <form @submit.prevent="logout">
-                    <button type="submit" class="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario">
+                    <button type="submit" :class="[claseItem(false), 'w-full text-left']">
                         <IconoNav icono="logout" />
-                        Cerrar Sesión
+                        Cerrar sesión
                     </button>
                 </form>
             </div>
         </aside>
 
         <div class="lg:pl-72">
-            <header class="pad-seguro-lados sticky top-0 z-20 flex h-16 items-center justify-between border-b border-iyem-claro/80 bg-white/85 px-4 backdrop-blur-md sm:px-6">
-                <div class="flex min-w-0 items-center gap-2">
-                    <button
-                        type="button"
-                        class="toque-minimo -ml-2 flex items-center justify-center text-gray-500 transition hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario lg:hidden"
-                        aria-label="Abrir el menú"
-                        @click="sidebarOpen = true"
-                    >
-                        <IconoNav icono="menu" class="h-6 w-6" />
-                    </button>
-
-                    <div v-if="$slots.header" class="min-w-0 truncate text-lg font-semibold text-gray-800">
-                        <slot name="header" />
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <BuscadorGlobal ref="buscador" />
-
-                    <Dropdown align="right" width="48">
-                    <template #trigger>
-                        <button type="button" class="toque-minimo flex items-center justify-end gap-2 rounded-full text-sm transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario">
-                            <img
-                                v-if="page.props.jetstream.managesProfilePhotos"
-                                class="h-9 w-9 rounded-full object-cover ring-2 ring-iyem-100"
-                                :src="user().profile_photo_url"
-                                :alt="user().name"
-                            >
-                            <span class="hidden font-medium text-gray-700 sm:block">{{ user().name }}</span>
+            <!-- Barra superior: fondo opaco para que el contenido no se lea
+                 por debajo al hacer scroll (sobre todo en oscuro). -->
+            <header class="pad-seguro-arriba pad-seguro-lados sticky top-0 z-20 border-b border-line bg-surface">
+                <div class="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
+                    <div class="flex min-w-0 items-center gap-2">
+                        <button
+                            type="button"
+                            class="toque-minimo -ml-2 flex items-center justify-center rounded-md text-ink-600 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus lg:hidden"
+                            aria-label="Abrir el menú"
+                            aria-controls="menu-principal"
+                            :aria-expanded="sidebarOpen ? 'true' : 'false'"
+                            @click="sidebarOpen = true"
+                        >
+                            <IconoNav icono="menu" class="h-6 w-6" />
                         </button>
-                    </template>
 
-                    <template #content>
-                        <DropdownLink :href="route('perfil')">
-                            Mi Perfil
-                        </DropdownLink>
-                        <form @submit.prevent="logout">
-                            <DropdownLink as="button">
-                                Cerrar Sesión
-                            </DropdownLink>
-                        </form>
-                    </template>
-                    </Dropdown>
+                        <div v-if="$slots.header" class="encabezado-pagina min-w-0 truncate text-subtitle text-ink">
+                            <slot name="header" />
+                        </div>
+                    </div>
+
+                    <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+                        <BuscadorGlobal ref="buscador" />
+
+                        <InterruptorTema />
+
+                        <Dropdown align="right" width="48">
+                            <template #trigger>
+                                <button
+                                    type="button"
+                                    class="toque-minimo flex items-center justify-end gap-2 rounded-md px-1 text-body text-ink transition-colors hover:bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
+                                    aria-label="Menú de la cuenta"
+                                >
+                                    <img
+                                        v-if="page.props.jetstream.managesProfilePhotos"
+                                        class="h-9 w-9 rounded-full object-cover"
+                                        :src="user().profile_photo_url"
+                                        :alt="user().name"
+                                    >
+                                    <span v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-caption font-semibold text-brand-700 dark:bg-surface-brand dark:text-brand-300" aria-hidden="true">
+                                        {{ iniciales() }}
+                                    </span>
+                                    <span class="hidden font-medium md:block">{{ user().name }}</span>
+                                </button>
+                            </template>
+
+                            <template #content>
+                                <DropdownLink :href="route('perfil')">
+                                    Mi perfil
+                                </DropdownLink>
+                                <form @submit.prevent="logout">
+                                    <DropdownLink as="button">
+                                        Cerrar sesión
+                                    </DropdownLink>
+                                </form>
+                            </template>
+                        </Dropdown>
+                    </div>
                 </div>
             </header>
 
@@ -256,19 +310,25 @@ const destinosInferiores = computed(() => {
             <div
                 v-if="user().es_tester"
                 role="status"
-                class="flex items-start gap-3 border-b border-iyem-dorado/40 bg-iyem-dorado/10 px-4 py-3 text-sm text-iyem-800 sm:px-6"
+                class="pad-seguro-lados border-b border-line bg-warning-surface"
             >
-                <IconoNav icono="alerta" class="mt-0.5 h-5 w-5 shrink-0 text-iyem-alerta" />
-                <p>
-                    <span class="font-semibold">Estás en modo de pruebas.</span>
-                    Los datos que ves son de demostración y algunos campos están enmascarados.
-                </p>
+                <div class="flex items-start gap-3 px-4 py-3 text-small text-ink sm:px-6">
+                    <IconoNav icono="alerta" class="h-5 w-5 shrink-0 text-warning" />
+                    <p>
+                        <span class="font-semibold">Estás en modo de pruebas.</span>
+                        Los datos que ves son de demostración y algunos campos están enmascarados.
+                    </p>
+                </div>
             </div>
 
             <!-- El padding inferior extra en móvil reserva el alto de la barra
-                 de navegación fija más el área segura del iPhone. -->
-            <main class="pad-seguro-lados espacio-barra-inferior p-4 sm:p-6 sm:pb-6 lg:p-8">
-                <slot />
+                 de navegación fija más el área segura del iPhone. El área
+                 segura lateral va aquí y el gutter en el hijo, para que las dos
+                 reglas de padding no se pisen. -->
+            <main id="contenido" tabindex="-1" class="pad-seguro-lados espacio-barra-inferior focus:outline-none sm:pb-0">
+                <div class="p-4 sm:p-6 lg:p-8">
+                    <slot />
+                </div>
             </main>
         </div>
 
@@ -276,7 +336,7 @@ const destinosInferiores = computed(() => {
              Barra de navegación inferior (solo teléfono)
              ============================================================ -->
         <nav
-            class="pad-seguro-abajo fixed inset-x-0 bottom-0 z-20 border-t border-iyem-200 bg-white/95 backdrop-blur-md sm:hidden"
+            class="pad-seguro-abajo pad-seguro-lados fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface sm:hidden"
             aria-label="Navegación principal"
         >
             <div class="flex items-stretch justify-around">
@@ -286,8 +346,8 @@ const destinosInferiores = computed(() => {
                     :key="destino.clave"
                     :href="destino.href"
                     :type="destino.href ? undefined : 'button'"
-                    class="toque-minimo flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[0.65rem] font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-iyem-secundario"
-                    :class="destino.activo ? 'text-iyem-primario' : 'text-gray-500'"
+                    class="toque-minimo flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-caption transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus"
+                    :class="destino.activo ? 'font-semibold text-action' : 'text-ink-600'"
                     :aria-current="destino.activo ? 'page' : undefined"
                     @click="destino.accion?.()"
                 >
