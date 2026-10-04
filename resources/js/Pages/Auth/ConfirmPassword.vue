@@ -2,9 +2,7 @@
 import { ref } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import AuthenticationCard from '@/Components/AuthenticationCard.vue';
-import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
+import Campo from '@/Components/Campo.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 
@@ -26,38 +24,31 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Secure Area" />
+    <Head title="Confirmar contraseña" />
 
-    <AuthenticationCard>
-        <template #logo>
-            <AuthenticationCardLogo />
-        </template>
-
-        <div class="mb-4 text-sm text-gray-600">
-            This is a secure area of the application. Please confirm your password before continuing.
-        </div>
-
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="password" value="Password" />
+    <AuthenticationCard
+        titulo="Confirma tu contraseña"
+        descripcion="Estás por entrar a una sección protegida. Escribe tu contraseña para continuar."
+    >
+        <form class="space-y-5" novalidate @submit.prevent="submit">
+            <Campo id="password" v-slot="campo" etiqueta="Contraseña" :error="form.errors.password">
                 <TextInput
-                    id="password"
+                    :id="campo.id"
                     ref="passwordInput"
                     v-model="form.password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="block w-full"
+                    :invalido="campo.invalido"
+                    :aria-describedby="campo.describedby"
                     required
                     autocomplete="current-password"
                     autofocus
                 />
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
+            </Campo>
 
-            <div class="flex justify-end mt-4">
-                <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Confirm
-                </PrimaryButton>
-            </div>
+            <PrimaryButton class="w-full" :procesando="form.processing">
+                {{ form.processing ? 'Confirmando…' : 'Confirmar y continuar' }}
+            </PrimaryButton>
         </form>
     </AuthenticationCard>
 </template>

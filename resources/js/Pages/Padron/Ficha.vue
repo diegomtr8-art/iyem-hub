@@ -4,8 +4,12 @@ import { Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import IconoModulo from '@/Components/IconoModulo.vue';
 import IconoNav from '@/Components/IconoNav.vue';
+import InputError from '@/Components/InputError.vue';
 import Paginacion from '@/Components/Paginacion.vue';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
+import TextInput from '@/Components/TextInput.vue';
 import { usePermisos } from '@/Composables/usePermisos';
+import { fecha, fechaHora, numero } from '@/formato';
 
 const props = defineProps({
     persona: { type: Object, required: true },
@@ -53,11 +57,11 @@ const totalVacios = computed(() =>
     props.secciones.reduce((n, s) => n + s.campos.filter((c) => c.vacio).length, 0),
 );
 
-const fechaCorta = (valor) =>
-    new Date(valor).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+// Claves e identificadores que se leen carácter por carácter: van en mono
+// aunque en config/padron.php sean de tipo "texto".
+const CAMPOS_MONO = ['curp', 'rfc', 'ine_clave', 'codigo_postal'];
 
-const fechaHora = (valor) =>
-    new Date(valor).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
+const esMono = (campo) => ['telefono', 'numero', 'fecha'].includes(campo.tipo) || CAMPOS_MONO.includes(campo.nombre);
 
 /* ------------------------------------------------------------------ *
  * Etiquetas
@@ -104,19 +108,23 @@ const filtrarAuditoria = () => {
  * Presentación
  * ------------------------------------------------------------------ */
 
-const coloresModulo = {
-    'iyem-primario': 'bg-iyem-gradient',
-    'iyem-secundario': 'bg-gradient-to-br from-iyem-secundario to-iyem-400',
-    'iyem-dorado': 'bg-gradient-to-br from-iyem-dorado to-amber-600',
+// Acento por módulo, igual que en TarjetaModulo.vue: el guinda existe solo
+// para CREA.
+const acentos = {
+    'guinda-700': 'bg-guinda-700 text-white',
+    'brand-500': 'bg-surface-brand text-brand-500 dark:text-brand-300',
 };
 
-const fondo = (color) => coloresModulo[color] ?? coloresModulo['iyem-primario'];
+const acento = (color) => acentos[color] ?? acentos['brand-500'];
 
-const colorEstado = (estado) => ({
-    activa: 'bg-iyem-exito/10 text-iyem-exito ring-iyem-exito/25',
-    inactiva: 'bg-gray-100 text-gray-600 ring-gray-300',
-    bloqueada: 'bg-iyem-error/10 text-iyem-error ring-iyem-error/25',
-}[estado] ?? 'bg-gray-100 text-gray-600 ring-gray-300');
+// Estado de la persona: fondo del tinte, texto ink, ícono del color.
+const estadosPersona = {
+    activa: { fondo: 'bg-success-surface', icono: 'text-success', trazo: 'exito' },
+    inactiva: { fondo: 'bg-surface-100', icono: 'text-ink-400', trazo: 'reloj' },
+    bloqueada: { fondo: 'bg-danger-surface', icono: 'text-danger', trazo: 'alerta' },
+};
+
+const estadoPersona = computed(() => estadosPersona[props.persona.estado_persona] ?? estadosPersona.inactiva);
 
 const iniciales = computed(() =>
     props.persona.nombre_completo
@@ -127,6 +135,10 @@ const iniciales = computed(() =>
         .join('')
         .toUpperCase(),
 );
+
+const claseEnlace = 'rounded-sm text-action underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2';
+const claseSelect = 'h-10 rounded-md border-line-strong bg-surface text-body text-ink focus:border-focus focus:ring-2 focus:ring-focus focus:ring-offset-2';
+const claseVacio = 'rounded-lg border border-line bg-surface p-6';
 </script>
 
 <template>
@@ -135,467 +147,445 @@ const iniciales = computed(() =>
             <div class="flex min-w-0 items-center gap-2">
                 <Link
                     :href="route('padron.index')"
-                    class="shrink-0 text-gray-400 transition hover:text-iyem-primario focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
+                    class="toque-minimo -ml-2 flex shrink-0 items-center justify-center rounded-md text-ink-600 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     aria-label="Volver al padrón"
                 >
                     <IconoNav icono="arrow" class="h-5 w-5 rotate-180" />
                 </Link>
-                <span class="truncate">Ficha de la persona</span>
+                <span>Ficha de la persona</span>
             </div>
         </template>
 
-        <!-- ============================================================
-             Encabezado de la persona
-             ============================================================ -->
-        <section class="relative overflow-hidden rounded-2xl bg-iyem-gradient shadow-soft-lg">
-            <div class="pointer-events-none absolute inset-0 bg-iyem-mesh" aria-hidden="true" />
-
-            <div class="relative flex flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:px-8">
-                <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-xl font-bold text-white backdrop-blur-sm">
-                    {{ iniciales }}
-                </div>
-
-                <div class="min-w-0 flex-1">
-                    <h1 class="text-xl font-bold text-white sm:text-2xl">
-                        {{ persona.nombre_completo }}
-                    </h1>
-                    <div class="mt-2 flex flex-wrap items-center gap-2">
-                        <span
-                            class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold capitalize text-white ring-1 ring-inset ring-white/20"
-                        >
-                            {{ persona.estado_persona }}
-                        </span>
-                        <span class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold capitalize text-white ring-1 ring-inset ring-white/20">
-                            Persona {{ persona.tipo_persona }}
-                        </span>
-                        <span v-if="persona.municipio" class="text-sm text-white/70">
-                            {{ persona.municipio }}
-                        </span>
-                        <span
-                            v-if="persona.demo"
-                            class="rounded-full bg-iyem-dorado/90 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-white"
-                        >
-                            Demostración
-                        </span>
-                    </div>
-                </div>
-
-                <p class="shrink-0 text-sm tabular-nums text-white/60">
-                    ID {{ persona.id }}
-                </p>
-            </div>
-        </section>
-
-        <!-- ============================================================
-             Pestañas
-             ============================================================ -->
-        <div class="scrollbar-fina mt-6 flex gap-1 overflow-x-auto border-b border-iyem-200" role="tablist">
-            <button
-                v-for="pestana in pestanas"
-                :key="pestana.clave"
-                type="button"
-                role="tab"
-                :aria-selected="pestanaActiva === pestana.clave"
-                class="flex min-h-[44px] shrink-0 items-center gap-2 border-b-2 px-3.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-iyem-secundario"
-                :class="pestanaActiva === pestana.clave
-                    ? 'border-iyem-secundario text-iyem-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'"
-                @click="pestanaActiva = pestana.clave"
-            >
-                <IconoNav :icono="pestana.icono" class="h-4 w-4" />
-                {{ pestana.texto }}
-            </button>
-        </div>
-
-        <!-- ============================================================
-             Datos generales
-             En iPad horizontal y escritorio, dos columnas: las secciones
-             son cortas y en una sola columna desperdician el ancho.
-             ============================================================ -->
-        <section v-show="pestanaActiva === 'datos'" class="mt-5">
-            <div v-if="totalVacios" class="mb-4 flex items-center justify-end">
-                <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-500">
-                    <input
-                        v-model="mostrarVacios"
-                        type="checkbox"
-                        class="rounded border-gray-300 text-iyem-primario focus:ring-iyem-secundario"
-                    >
-                    Mostrar los {{ totalVacios }} campos sin capturar
-                </label>
-            </div>
-
-            <div class="grid gap-4 xl:grid-cols-2">
-                <div
-                    v-for="seccion in secciones"
-                    :key="seccion.clave"
-                    class="h-fit overflow-hidden rounded-2xl border border-iyem-200 bg-white shadow-soft"
-                >
-                    <button
-                        type="button"
-                        class="flex min-h-[52px] w-full items-center gap-3 px-4 text-left transition-colors duration-200 hover:bg-iyem-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-iyem-secundario"
-                        :aria-expanded="abiertas[seccion.clave]"
-                        @click="abiertas[seccion.clave] = !abiertas[seccion.clave]"
-                    >
-                        <IconoNav :icono="seccion.icono" class="h-5 w-5 text-iyem-primario" />
-                        <span class="flex-1 font-semibold text-gray-800">{{ seccion.titulo }}</span>
-                        <IconoNav
-                            icono="chevron"
-                            class="h-4 w-4 text-gray-400 transition-transform duration-200"
-                            :class="abiertas[seccion.clave] ? 'rotate-180' : ''"
-                        />
-                    </button>
-
-                    <dl v-show="abiertas[seccion.clave]" class="divide-y divide-iyem-100 border-t border-iyem-100">
-                        <div
-                            v-for="campo in camposVisibles(seccion)"
-                            :key="campo.nombre"
-                            class="flex flex-col gap-0.5 px-4 py-2.5 sm:flex-row sm:gap-4"
-                        >
-                            <dt class="text-sm text-gray-400 sm:w-44 sm:shrink-0">
-                                {{ campo.etiqueta }}
-                            </dt>
-                            <dd class="min-w-0 break-words text-sm text-gray-800">
-                                <span v-if="campo.valor === null" class="text-gray-300">Sin capturar</span>
-
-                                <a
-                                    v-else-if="campo.tipo === 'correo'"
-                                    :href="`mailto:${campo.valor}`"
-                                    class="text-iyem-700 underline-offset-2 hover:underline"
-                                >{{ campo.valor }}</a>
-
-                                <a
-                                    v-else-if="campo.tipo === 'telefono'"
-                                    :href="`tel:${campo.valor}`"
-                                    class="tabular-nums text-iyem-700 underline-offset-2 hover:underline"
-                                >{{ campo.valor }}</a>
-
-                                <a
-                                    v-else-if="campo.tipo === 'url'"
-                                    :href="campo.valor"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="inline-flex items-center gap-1 break-all text-iyem-700 underline-offset-2 hover:underline"
-                                >
-                                    {{ campo.valor }}
-                                    <IconoNav icono="externo" class="h-3.5 w-3.5 shrink-0" />
-                                </a>
-
-                                <span v-else-if="campo.tipo === 'fecha'">{{ fechaCorta(campo.valor) }}</span>
-
-                                <span v-else-if="campo.tipo === 'numero'" class="tabular-nums">{{ campo.valor }}</span>
-
-                                <span v-else>{{ campo.valor }}</span>
-                            </dd>
-                        </div>
-
-                        <p
-                            v-if="!camposVisibles(seccion).length"
-                            class="px-4 py-4 text-sm text-gray-400"
-                        >
-                            Esta sección no tiene datos capturados.
-                        </p>
-                    </dl>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============================================================
-             Línea de tiempo unificada
-             ============================================================ -->
-        <section v-show="pestanaActiva === 'tiempo'" class="mt-5">
-            <ol v-if="lineaDeTiempo.length" class="relative space-y-4 border-l-2 border-iyem-100 pl-6 sm:pl-8">
-                <li
-                    v-for="(evento, i) in lineaDeTiempo"
-                    :key="i"
-                    class="relative"
-                >
-                    <span
-                        class="absolute -left-[calc(1.5rem+1px)] top-3 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full text-white ring-4 ring-iyem-neutro sm:-left-[calc(2rem+1px)]"
-                        :class="fondo(evento.modulo_color)"
-                    >
-                        <IconoModulo :icono="evento.modulo_icono" class="h-3.5 w-3.5" />
+        <div class="mx-auto max-w-7xl">
+            <!-- ============================================================
+                 Encabezado de la persona: zona teñida plana
+                 ============================================================ -->
+            <section class="rounded-lg border border-line bg-surface-brand p-5 sm:p-6" aria-labelledby="nombre-persona">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-600 text-title text-white" aria-hidden="true">
+                        {{ iniciales }}
                     </span>
-
-                    <div class="rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft">
-                        <div class="flex flex-wrap items-start justify-between gap-2">
-                            <p class="font-medium text-gray-800">
-                                {{ evento.titulo }}
-                            </p>
-                            <time
-                                class="shrink-0 text-xs tabular-nums text-gray-400"
-                                :datetime="evento.fecha"
-                            >
-                                {{ fechaCorta(evento.fecha) }}
-                            </time>
-                        </div>
-
-                        <p class="mt-1 text-sm text-gray-500">
-                            {{ evento.detalle }}
-                        </p>
-
-                        <div class="mt-2.5 flex flex-wrap items-center gap-2">
-                            <span class="rounded-full bg-iyem-claro px-2 py-0.5 text-[0.7rem] font-semibold text-iyem-700">
-                                {{ evento.modulo_nombre }}
-                            </span>
-                            <span
-                                v-if="evento.estado"
-                                class="rounded-full bg-gray-100 px-2 py-0.5 text-[0.7rem] font-medium capitalize text-gray-600"
-                            >
-                                {{ evento.estado.replace('_', ' ') }}
-                            </span>
-                        </div>
-                    </div>
-                </li>
-            </ol>
-
-            <p v-else class="rounded-2xl border border-dashed border-iyem-200 px-4 py-10 text-center text-sm text-gray-500">
-                Esta persona todavía no tiene movimientos registrados en ningún módulo.
-            </p>
-        </section>
-
-        <!-- ============================================================
-             Vínculos por módulo
-             ============================================================ -->
-        <section v-show="pestanaActiva === 'vinculos'" class="mt-5">
-            <div v-if="vinculos.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <component
-                    :is="vinculo.url ? 'a' : 'div'"
-                    v-for="vinculo in vinculos"
-                    :key="vinculo.slug"
-                    :href="vinculo.url"
-                    :target="vinculo.url ? '_blank' : undefined"
-                    :rel="vinculo.url ? 'noopener noreferrer' : undefined"
-                    class="group flex items-center gap-4 rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft transition-all duration-200"
-                    :class="vinculo.url ? 'hover:-translate-y-0.5 hover:shadow-soft-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario' : ''"
-                >
-                    <div
-                        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white shadow-glow"
-                        :class="fondo(vinculo.color)"
-                    >
-                        <IconoModulo :icono="vinculo.icono" />
-                    </div>
 
                     <div class="min-w-0 flex-1">
-                        <p class="font-semibold text-gray-800">
-                            {{ vinculo.nombre }}
-                        </p>
-                        <p class="mt-0.5 text-sm text-gray-500">
-                            {{ vinculo.descripcion }}
-                        </p>
-                    </div>
-
-                    <span class="shrink-0 text-2xl font-bold tabular-nums text-iyem-700">
-                        {{ vinculo.total }}
-                    </span>
-                </component>
-            </div>
-
-            <p v-else class="rounded-2xl border border-dashed border-iyem-200 px-4 py-10 text-center text-sm text-gray-500">
-                Esta persona no tiene registros en ningún módulo del ecosistema.
-            </p>
-        </section>
-
-        <!-- ============================================================
-             Etiquetas
-             ============================================================ -->
-        <section v-show="pestanaActiva === 'etiquetas'" class="mt-5">
-            <div class="rounded-2xl border border-iyem-200 bg-white p-5 shadow-soft">
-                <h3 class="font-semibold text-gray-800">
-                    Etiquetas de la persona
-                </h3>
-
-                <div v-if="etiquetas.length" class="mt-3 flex flex-wrap gap-2">
-                    <span
-                        v-for="etiqueta in etiquetas"
-                        :key="etiqueta"
-                        class="inline-flex items-center gap-1.5 rounded-full bg-iyem-claro py-1 pl-3 pr-1.5 text-sm font-medium text-iyem-700"
-                    >
-                        {{ etiqueta }}
-                        <button
-                            v-if="puede('editar-padron')"
-                            type="button"
-                            class="flex h-6 w-6 items-center justify-center rounded-full text-iyem-500 transition hover:bg-iyem-200 hover:text-iyem-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                            :aria-label="`Quitar la etiqueta ${etiqueta}`"
-                            @click="quitarEtiqueta(etiqueta)"
-                        >
-                            <IconoNav icono="close" class="h-3.5 w-3.5" />
-                        </button>
-                    </span>
-                </div>
-
-                <p v-else class="mt-2 text-sm text-gray-400">
-                    Sin etiquetas.
-                </p>
-
-                <template v-if="puede('editar-padron')">
-                    <form class="mt-5 flex flex-col gap-2 sm:flex-row" @submit.prevent="agregarEtiqueta()">
-                        <input
-                            v-model="formEtiqueta.etiqueta"
-                            list="etiquetas-sugeridas"
-                            type="text"
-                            maxlength="60"
-                            autocapitalize="none"
-                            placeholder="Escribe o elige una etiqueta…"
-                            aria-label="Nueva etiqueta"
-                            class="h-11 flex-1 rounded-lg border-gray-300 text-sm shadow-sm focus:border-iyem-secundario focus:ring-iyem-secundario"
-                        >
-                        <datalist id="etiquetas-sugeridas">
-                            <option v-for="sugerencia in sugerenciasLibres" :key="sugerencia" :value="sugerencia" />
-                        </datalist>
-
-                        <button
-                            type="submit"
-                            :disabled="formEtiqueta.processing || !formEtiqueta.etiqueta.trim()"
-                            class="toque-minimo inline-flex items-center justify-center gap-2 rounded-lg bg-iyem-gradient px-4 text-sm font-semibold text-white shadow-soft transition hover:shadow-glow disabled:opacity-50 disabled:hover:shadow-soft"
-                        >
-                            <IconoNav icono="mas" class="h-4 w-4" />
-                            Agregar
-                        </button>
-                    </form>
-
-                    <p v-if="formEtiqueta.errors.etiqueta" class="mt-2 text-sm text-iyem-error">
-                        {{ formEtiqueta.errors.etiqueta }}
-                    </p>
-
-                    <div v-if="sugerenciasLibres.length" class="mt-4">
-                        <p class="text-xs uppercase tracking-wide text-gray-400">
-                            Sugerencias
-                        </p>
-                        <div class="mt-2 flex flex-wrap gap-1.5">
-                            <button
-                                v-for="sugerencia in sugerenciasLibres.slice(0, 12)"
-                                :key="sugerencia"
-                                type="button"
-                                class="rounded-full border border-iyem-200 px-2.5 py-1 text-xs text-gray-600 transition hover:border-iyem-400 hover:text-iyem-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iyem-secundario"
-                                @click="agregarEtiqueta(sugerencia)"
-                            >
-                                + {{ sugerencia }}
-                            </button>
+                        <h1 id="nombre-persona" class="break-words text-display-lg text-ink">
+                            {{ persona.nombre_completo }}
+                        </h1>
+                        <div class="mt-2 flex flex-wrap items-center gap-2">
+                            <span class="inline-flex h-6 items-center gap-1 rounded-sm px-2 text-caption capitalize text-ink" :class="estadoPersona.fondo">
+                                <IconoNav :icono="estadoPersona.trazo" class="h-3.5 w-3.5" :class="estadoPersona.icono" />
+                                {{ persona.estado_persona }}
+                            </span>
+                            <span class="inline-flex h-6 items-center rounded-sm bg-surface px-2 text-caption text-ink">
+                                Persona {{ persona.tipo_persona }}
+                            </span>
+                            <span v-if="persona.demo" class="inline-flex h-6 items-center gap-1 rounded-sm bg-warning-surface px-2 text-caption text-ink">
+                                <IconoNav icono="alerta" class="h-3.5 w-3.5 text-warning" />
+                                Demostración
+                            </span>
+                            <span v-if="persona.municipio" class="text-small text-ink-600">
+                                {{ persona.municipio }}
+                            </span>
                         </div>
                     </div>
-                </template>
-            </div>
-        </section>
 
-        <!-- ============================================================
-             Auditoría
-             ============================================================ -->
-        <section v-show="pestanaActiva === 'auditoria'" class="mt-5">
-            <div class="flex flex-col gap-2 sm:flex-row">
-                <select
-                    v-model="filtroCampo"
-                    aria-label="Filtrar por campo"
-                    class="h-11 rounded-lg border-gray-300 text-sm shadow-sm focus:border-iyem-secundario focus:ring-iyem-secundario"
-                    @change="filtrarAuditoria"
-                >
-                    <option value="">
-                        Todos los campos
-                    </option>
-                    <option v-for="campo in camposAuditados" :key="campo" :value="campo">
-                        {{ campo }}
-                    </option>
-                </select>
+                    <p class="shrink-0 text-small text-ink-600">
+                        ID <span class="font-mono text-ink">{{ persona.id }}</span>
+                    </p>
+                </div>
+            </section>
 
-                <select
-                    v-model="filtroModulo"
-                    aria-label="Filtrar por módulo de origen"
-                    class="h-11 rounded-lg border-gray-300 text-sm shadow-sm focus:border-iyem-secundario focus:ring-iyem-secundario"
-                    @change="filtrarAuditoria"
+            <!-- ============================================================
+                 Pestañas
+                 ============================================================ -->
+            <div class="scrollbar-fina mt-6 flex gap-1 overflow-x-auto border-b border-line" role="tablist" aria-label="Secciones de la ficha">
+                <button
+                    v-for="pestana in pestanas"
+                    :id="`pestana-${pestana.clave}`"
+                    :key="pestana.clave"
+                    type="button"
+                    role="tab"
+                    :aria-selected="pestanaActiva === pestana.clave ? 'true' : 'false'"
+                    :aria-controls="`panel-${pestana.clave}`"
+                    class="-mb-px flex min-h-[44px] shrink-0 items-center gap-2 border-b-2 px-3 text-body font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus"
+                    :class="pestanaActiva === pestana.clave
+                        ? 'border-action text-action'
+                        : 'border-transparent text-ink-600 hover:text-ink'"
+                    @click="pestanaActiva = pestana.clave"
                 >
-                    <option value="">
-                        Todos los módulos
-                    </option>
-                    <option v-for="modulo in modulosAuditados" :key="modulo" :value="modulo">
-                        {{ modulo }}
-                    </option>
-                </select>
+                    <IconoNav :icono="pestana.icono" class="h-4 w-4" />
+                    {{ pestana.texto }}
+                </button>
             </div>
 
-            <!-- Teléfono: tarjetas -->
-            <ul v-if="auditorias.data.length" class="mt-4 space-y-3 md:hidden">
-                <li
-                    v-for="registro in auditorias.data"
-                    :key="registro.id"
-                    class="rounded-2xl border border-iyem-200 bg-white p-4 text-sm shadow-soft"
-                >
-                    <div class="flex items-start justify-between gap-2">
-                        <p class="font-medium text-gray-800">
-                            {{ registro.campo }}
-                        </p>
-                        <time class="shrink-0 text-xs text-gray-400">{{ fechaHora(registro.fecha) }}</time>
+            <!-- ============================================================
+                 Datos generales
+                 En iPad horizontal y escritorio, dos columnas: las secciones
+                 son cortas y en una sola columna desperdician el ancho.
+                 ============================================================ -->
+            <section
+                v-show="pestanaActiva === 'datos'"
+                id="panel-datos"
+                role="tabpanel"
+                aria-labelledby="pestana-datos"
+                class="mt-6"
+            >
+                <div v-if="totalVacios" class="mb-4 flex items-center justify-end">
+                    <label class="inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-small text-ink-600">
+                        <input
+                            v-model="mostrarVacios"
+                            type="checkbox"
+                            class="h-4 w-4 rounded-sm border-line-strong bg-surface text-action focus:ring-2 focus:ring-focus focus:ring-offset-2"
+                        >
+                        Mostrar los <span class="font-mono">{{ totalVacios }}</span> campos sin capturar
+                    </label>
+                </div>
+
+                <div class="grid gap-6 xl:grid-cols-2">
+                    <div
+                        v-for="seccion in secciones"
+                        :key="seccion.clave"
+                        class="h-fit overflow-hidden rounded-lg border border-line bg-surface shadow-sm"
+                    >
+                        <h3>
+                            <button
+                                type="button"
+                                class="flex min-h-[52px] w-full items-center gap-3 px-5 text-left transition-colors hover:bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus"
+                                :aria-expanded="abiertas[seccion.clave] ? 'true' : 'false'"
+                                @click="abiertas[seccion.clave] = !abiertas[seccion.clave]"
+                            >
+                                <IconoNav :icono="seccion.icono" class="h-5 w-5 text-action" />
+                                <span class="flex-1 text-subtitle text-ink">{{ seccion.titulo }}</span>
+                                <IconoNav
+                                    icono="chevron"
+                                    class="h-4 w-4 text-ink-600 transition-transform"
+                                    :class="abiertas[seccion.clave] ? 'rotate-180' : ''"
+                                />
+                            </button>
+                        </h3>
+
+                        <dl v-show="abiertas[seccion.clave]" class="divide-y divide-line border-t border-line">
+                            <div
+                                v-for="campo in camposVisibles(seccion)"
+                                :key="campo.nombre"
+                                class="flex flex-col gap-0.5 px-5 py-3 sm:flex-row sm:gap-4"
+                            >
+                                <dt class="text-small text-ink-600 sm:w-44 sm:shrink-0">
+                                    {{ campo.etiqueta }}
+                                </dt>
+                                <dd class="min-w-0 break-words text-body text-ink" :class="esMono(campo) ? 'font-mono' : ''">
+                                    <span v-if="campo.valor === null" class="font-sans text-ink-400">Sin capturar</span>
+
+                                    <a
+                                        v-else-if="campo.tipo === 'correo'"
+                                        :href="`mailto:${campo.valor}`"
+                                        :class="claseEnlace"
+                                    >{{ campo.valor }}</a>
+
+                                    <a
+                                        v-else-if="campo.tipo === 'telefono'"
+                                        :href="`tel:${campo.valor}`"
+                                        :class="claseEnlace"
+                                    >{{ campo.valor }}</a>
+
+                                    <a
+                                        v-else-if="campo.tipo === 'url'"
+                                        :href="campo.valor"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        :class="[claseEnlace, 'inline-flex items-center gap-1 break-all']"
+                                    >
+                                        {{ campo.valor }}
+                                        <IconoNav icono="externo" class="h-3.5 w-3.5 shrink-0" />
+                                        <span class="sr-only">(se abre en una pestaña nueva)</span>
+                                    </a>
+
+                                    <span v-else-if="campo.tipo === 'fecha'">{{ fecha(campo.valor) }}</span>
+
+                                    <span v-else>{{ campo.valor }}</span>
+                                </dd>
+                            </div>
+
+                            <p v-if="!camposVisibles(seccion).length" class="px-5 py-4 text-small text-ink-600">
+                                Esta sección no tiene datos capturados.
+                                <template v-if="!mostrarVacios && seccion.campos.length">Activa «Mostrar los campos sin capturar» para verlos.</template>
+                            </p>
+                        </dl>
                     </div>
-                    <p class="mt-2 break-words text-gray-600">
-                        <span class="text-gray-400 line-through">{{ registro.valor_anterior || '—' }}</span>
-                        <span class="mx-1.5 text-gray-300">→</span>
-                        <span>{{ registro.valor_nuevo || '—' }}</span>
-                    </p>
-                    <p class="mt-2 text-xs text-gray-400">
-                        {{ registro.usuario }} · {{ registro.modulo || 'sin módulo' }}
-                    </p>
-                </li>
-            </ul>
+                </div>
+            </section>
 
-            <!-- Tablet y escritorio: tabla -->
-            <div
-                v-if="auditorias.data.length"
-                class="scrollbar-fina mt-4 hidden overflow-x-auto rounded-2xl border border-iyem-200 bg-white shadow-soft md:block"
+            <!-- ============================================================
+                 Línea de tiempo unificada
+                 ============================================================ -->
+            <section
+                v-show="pestanaActiva === 'tiempo'"
+                id="panel-tiempo"
+                role="tabpanel"
+                aria-labelledby="pestana-tiempo"
+                class="mt-6"
             >
-                <table class="min-w-full divide-y divide-iyem-100 text-sm">
-                    <thead class="bg-iyem-50 text-left text-xs uppercase tracking-wide text-iyem-700">
-                        <tr>
-                            <th scope="col" class="px-4 py-3">
-                                Campo
-                            </th>
-                            <th scope="col" class="px-4 py-3">
-                                Antes
-                            </th>
-                            <th scope="col" class="px-4 py-3">
-                                Después
-                            </th>
-                            <th scope="col" class="px-4 py-3">
-                                Módulo
-                            </th>
-                            <th scope="col" class="px-4 py-3">
-                                Usuario
-                            </th>
-                            <th scope="col" class="px-4 py-3">
-                                Fecha
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-iyem-100">
-                        <tr v-for="registro in auditorias.data" :key="registro.id">
-                            <td class="px-4 py-3 font-medium text-gray-800">
-                                {{ registro.campo }}
-                            </td>
-                            <td class="max-w-[16rem] truncate px-4 py-3 text-gray-400">
-                                {{ registro.valor_anterior || '—' }}
-                            </td>
-                            <td class="max-w-[16rem] truncate px-4 py-3 text-gray-700">
-                                {{ registro.valor_nuevo || '—' }}
-                            </td>
-                            <td class="px-4 py-3 text-gray-500">
-                                {{ registro.modulo || '—' }}
-                            </td>
-                            <td class="px-4 py-3 text-gray-500">
-                                {{ registro.usuario }}
-                            </td>
-                            <td class="whitespace-nowrap px-4 py-3 tabular-nums text-gray-500">
-                                {{ fechaHora(registro.fecha) }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                <ol v-if="lineaDeTiempo.length" class="relative space-y-4 border-l-2 border-line pl-6 sm:pl-8">
+                    <li v-for="(evento, i) in lineaDeTiempo" :key="i" class="relative">
+                        <span
+                            class="absolute -left-[calc(1.5rem+1px)] top-4 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full ring-4 ring-[color:var(--surface-050)] sm:-left-[calc(2rem+1px)]"
+                            :class="acento(evento.modulo_color)"
+                            aria-hidden="true"
+                        >
+                            <IconoModulo :icono="evento.modulo_icono" class="h-4 w-4" />
+                        </span>
 
-            <p
-                v-if="!auditorias.data.length"
-                class="mt-4 rounded-2xl border border-dashed border-iyem-200 px-4 py-10 text-center text-sm text-gray-500"
+                        <div class="rounded-lg border border-line bg-surface p-5 shadow-sm">
+                            <div class="flex flex-wrap items-start justify-between gap-2">
+                                <h3 class="text-body-strong text-ink">{{ evento.titulo }}</h3>
+                                <time class="shrink-0 font-mono text-small text-ink-600" :datetime="evento.fecha">
+                                    {{ fecha(evento.fecha) }}
+                                </time>
+                            </div>
+
+                            <p class="mt-1 text-small text-ink-600">{{ evento.detalle }}</p>
+
+                            <div class="mt-3 flex flex-wrap items-center gap-2">
+                                <span class="inline-flex h-6 items-center rounded-sm bg-surface-brand px-2 text-caption text-ink">
+                                    {{ evento.modulo_nombre }}
+                                </span>
+                                <span v-if="evento.estado" class="inline-flex h-6 items-center rounded-sm bg-surface-100 px-2 text-caption capitalize text-ink">
+                                    {{ evento.estado.replace('_', ' ') }}
+                                </span>
+                            </div>
+                        </div>
+                    </li>
+                </ol>
+
+                <div v-else :class="claseVacio">
+                    <p class="text-body-strong text-ink">Sin movimientos registrados.</p>
+                    <p class="mt-1 text-small text-ink-600">
+                        Cuando esta persona tenga un trámite en algún módulo del ecosistema, aparecerá aquí en orden cronológico.
+                    </p>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 Vínculos por módulo
+                 ============================================================ -->
+            <section
+                v-show="pestanaActiva === 'vinculos'"
+                id="panel-vinculos"
+                role="tabpanel"
+                aria-labelledby="pestana-vinculos"
+                class="mt-6"
             >
-                No hay cambios registrados con esos filtros.
-            </p>
+                <div v-if="vinculos.length" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    <component
+                        :is="vinculo.url ? 'a' : 'div'"
+                        v-for="vinculo in vinculos"
+                        :key="vinculo.slug"
+                        :href="vinculo.url"
+                        :target="vinculo.url ? '_blank' : undefined"
+                        :rel="vinculo.url ? 'noopener noreferrer' : undefined"
+                        :aria-label="vinculo.url ? `${vinculo.nombre}: ${vinculo.total} registros (sitio externo, se abre en una pestaña nueva)` : undefined"
+                        class="group flex items-center gap-4 rounded-lg border border-line bg-surface p-5 shadow-sm transition-colors"
+                        :class="vinculo.url ? 'hover:border-line-strong hover:bg-surface-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2' : ''"
+                    >
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md" :class="acento(vinculo.color)">
+                            <IconoModulo :icono="vinculo.icono" />
+                        </span>
 
-            <Paginacion :paginador="auditorias" />
-        </section>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="flex items-center gap-1.5 text-subtitle text-ink">
+                                {{ vinculo.nombre }}
+                                <IconoNav v-if="vinculo.url" icono="externo" class="h-4 w-4 text-action" />
+                            </h3>
+                            <p class="mt-0.5 text-small text-ink-600">{{ vinculo.descripcion }}</p>
+                        </div>
+
+                        <span class="shrink-0 text-number-lg text-ink">{{ numero(vinculo.total) }}</span>
+                    </component>
+                </div>
+
+                <div v-else :class="claseVacio">
+                    <p class="text-body-strong text-ink">Sin registros en otros módulos.</p>
+                    <p class="mt-1 text-small text-ink-600">
+                        Esta persona solo existe en el padrón. Cuando un módulo la registre, el vínculo aparecerá aquí.
+                    </p>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 Etiquetas
+                 ============================================================ -->
+            <section
+                v-show="pestanaActiva === 'etiquetas'"
+                id="panel-etiquetas"
+                role="tabpanel"
+                aria-labelledby="pestana-etiquetas"
+                class="mt-6"
+            >
+                <div class="rounded-lg border border-line bg-surface p-5 shadow-sm">
+                    <h3 class="text-title text-ink">Etiquetas de la persona</h3>
+
+                    <ul v-if="etiquetas.length" class="mt-4 flex flex-wrap gap-2" role="list">
+                        <li
+                            v-for="etiqueta in etiquetas"
+                            :key="etiqueta"
+                            class="inline-flex h-8 items-center gap-1 rounded-full bg-surface-brand pl-3 text-small text-ink"
+                            :class="puede('editar-padron') ? 'pr-0.5' : 'pr-3'"
+                        >
+                            {{ etiqueta }}
+                            <button
+                                v-if="puede('editar-padron')"
+                                type="button"
+                                class="flex h-7 w-7 items-center justify-center rounded-full text-ink-600 transition-colors hover:bg-surface-100 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                                :aria-label="`Quitar la etiqueta ${etiqueta}`"
+                                @click="quitarEtiqueta(etiqueta)"
+                            >
+                                <IconoNav icono="close" class="h-3.5 w-3.5" />
+                            </button>
+                        </li>
+                    </ul>
+
+                    <p v-else class="mt-2 text-small text-ink-600">
+                        Sin etiquetas todavía.<template v-if="puede('editar-padron')"> Agrega la primera con el campo de abajo.</template>
+                    </p>
+
+                    <template v-if="puede('editar-padron')">
+                        <form class="mt-5 border-t border-line pt-5" @submit.prevent="agregarEtiqueta()">
+                            <label for="nueva-etiqueta" class="block text-body-strong text-ink">Nueva etiqueta</label>
+                            <div class="mt-1.5 flex flex-col gap-2 sm:flex-row">
+                                <TextInput
+                                    id="nueva-etiqueta"
+                                    v-model="formEtiqueta.etiqueta"
+                                    list="etiquetas-sugeridas"
+                                    type="text"
+                                    maxlength="60"
+                                    autocapitalize="none"
+                                    placeholder="Escribe o elige una etiqueta…"
+                                    class="block w-full sm:flex-1"
+                                    :invalido="Boolean(formEtiqueta.errors.etiqueta)"
+                                    :aria-describedby="formEtiqueta.errors.etiqueta ? 'nueva-etiqueta-error' : undefined"
+                                />
+                                <datalist id="etiquetas-sugeridas">
+                                    <option v-for="sugerencia in sugerenciasLibres" :key="sugerencia" :value="sugerencia" />
+                                </datalist>
+
+                                <PrimaryButton
+                                    :procesando="formEtiqueta.processing"
+                                    :disabled="formEtiqueta.processing || !formEtiqueta.etiqueta.trim()"
+                                    :title="!formEtiqueta.etiqueta.trim() ? 'Escribe una etiqueta para agregarla' : undefined"
+                                >
+                                    <IconoNav icono="mas" class="h-4 w-4" />
+                                    {{ formEtiqueta.processing ? 'Agregando…' : 'Agregar etiqueta' }}
+                                </PrimaryButton>
+                            </div>
+                            <InputError id="nueva-etiqueta-error" class="mt-1.5" :message="formEtiqueta.errors.etiqueta" />
+                        </form>
+
+                        <div v-if="sugerenciasLibres.length" class="mt-5">
+                            <h4 class="text-overline text-ink-600">Sugerencias</h4>
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <button
+                                    v-for="sugerencia in sugerenciasLibres.slice(0, 12)"
+                                    :key="sugerencia"
+                                    type="button"
+                                    class="inline-flex min-h-[36px] items-center gap-1 rounded-full border border-line-strong px-3 text-small text-ink transition-colors hover:bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2"
+                                    :aria-label="`Agregar la etiqueta ${sugerencia}`"
+                                    @click="agregarEtiqueta(sugerencia)"
+                                >
+                                    <IconoNav icono="mas" class="h-3.5 w-3.5 text-action" />
+                                    {{ sugerencia }}
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 Auditoría
+                 ============================================================ -->
+            <section
+                v-show="pestanaActiva === 'auditoria'"
+                id="panel-auditoria"
+                role="tabpanel"
+                aria-labelledby="pestana-auditoria"
+                class="mt-6"
+            >
+                <div class="flex flex-col gap-4 rounded-lg border border-line bg-surface-50 p-4 sm:flex-row sm:items-end">
+                    <div>
+                        <label for="filtro-campo" class="block text-body-strong text-ink">Campo</label>
+                        <select id="filtro-campo" v-model="filtroCampo" :class="[claseSelect, 'mt-1.5 w-full sm:w-56']" @change="filtrarAuditoria">
+                            <option value="">Todos los campos</option>
+                            <option v-for="campo in camposAuditados" :key="campo" :value="campo">{{ campo }}</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="filtro-modulo" class="block text-body-strong text-ink">Módulo de origen</label>
+                        <select id="filtro-modulo" v-model="filtroModulo" :class="[claseSelect, 'mt-1.5 w-full sm:w-56']" @change="filtrarAuditoria">
+                            <option value="">Todos los módulos</option>
+                            <option v-for="modulo in modulosAuditados" :key="modulo" :value="modulo">{{ modulo }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <template v-if="auditorias.data.length">
+                    <!-- Teléfono: lista de tarjetas -->
+                    <ul class="mt-4 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface md:hidden">
+                        <li v-for="registro in auditorias.data" :key="registro.id" class="p-4">
+                            <div class="flex items-start justify-between gap-2">
+                                <p class="text-body-strong text-ink">{{ registro.campo }}</p>
+                                <time class="shrink-0 font-mono text-small text-ink-600" :datetime="registro.fecha">{{ fechaHora(registro.fecha) }}</time>
+                            </div>
+                            <dl class="mt-2 grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-small">
+                                <dt class="text-ink-600">Antes</dt>
+                                <dd class="break-words text-ink-600">{{ registro.valor_anterior || '—' }}</dd>
+                                <dt class="text-ink-600">Después</dt>
+                                <dd class="break-words text-ink">{{ registro.valor_nuevo || '—' }}</dd>
+                            </dl>
+                            <p class="mt-2 text-caption text-ink-600">
+                                {{ registro.usuario }} · {{ registro.modulo || 'Sin módulo' }}
+                            </p>
+                        </li>
+                    </ul>
+
+                    <!-- Tablet y escritorio: tabla a sangre en su contenedor -->
+                    <div class="scrollbar-fina mt-4 hidden max-h-[70vh] overflow-auto border border-line bg-surface md:block">
+                        <table class="min-w-full text-left">
+                            <thead class="sticky top-0 z-10 bg-surface-50">
+                                <tr>
+                                    <th scope="col" class="px-3 py-2 text-overline text-ink-600">Campo</th>
+                                    <th scope="col" class="px-3 py-2 text-overline text-ink-600">Antes</th>
+                                    <th scope="col" class="px-3 py-2 text-overline text-ink-600">Después</th>
+                                    <th scope="col" class="px-3 py-2 text-overline text-ink-600">Módulo</th>
+                                    <th scope="col" class="px-3 py-2 text-overline text-ink-600">Usuario</th>
+                                    <th scope="col" class="px-3 py-2 text-overline text-ink-600">Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="registro in auditorias.data" :key="registro.id" class="border-t border-line hover:bg-surface-100">
+                                    <td class="h-11 px-3 text-body-strong text-ink">{{ registro.campo }}</td>
+                                    <td class="max-w-[16rem] truncate px-3 text-body text-ink-600" :title="registro.valor_anterior">{{ registro.valor_anterior || '—' }}</td>
+                                    <td class="max-w-[16rem] truncate px-3 text-body text-ink" :title="registro.valor_nuevo">{{ registro.valor_nuevo || '—' }}</td>
+                                    <td class="px-3 text-body text-ink-600">{{ registro.modulo || '—' }}</td>
+                                    <td class="px-3 text-body text-ink-600">{{ registro.usuario }}</td>
+                                    <td class="whitespace-nowrap px-3 text-number text-ink">
+                                        <time :datetime="registro.fecha">{{ fechaHora(registro.fecha) }}</time>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+
+                <div v-else :class="[claseVacio, 'mt-4']">
+                    <p class="text-body-strong text-ink">No hay cambios registrados con esos filtros.</p>
+                    <p class="mt-1 text-small text-ink-600">
+                        <template v-if="filtroCampo || filtroModulo">Prueba con «Todos los campos» y «Todos los módulos».</template>
+                        <template v-else>Cuando alguien modifique un dato de esta persona, el cambio quedará anotado aquí.</template>
+                    </p>
+                </div>
+
+                <Paginacion :paginador="auditorias" />
+            </section>
+        </div>
     </AppLayout>
 </template>

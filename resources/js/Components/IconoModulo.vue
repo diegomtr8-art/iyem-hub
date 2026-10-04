@@ -6,6 +6,13 @@
  * `config/modulos.php`. Si llega una clave desconocida, se dibuja la
  * cuadrícula genérica en vez de romper la tarjeta.
  */
+// Tamaño de omisión 24px solo si quien lo usa no pasa sus propias clases:
+// así `class="h-4 w-4"` no choca con un h-6 fijo.
+import { useAttrs } from 'vue';
+
+defineOptions({ inheritAttrs: false });
+const attrs = useAttrs();
+
 defineProps({
     icono: {
         type: String,
@@ -39,7 +46,8 @@ const paths = {
 
 <template>
     <svg
-        class="h-6 w-6"
+        v-bind="attrs"
+        :class="attrs.class ? '' : 'h-6 w-6'"
         fill="none"
         viewBox="0 0 24 24"
         stroke-width="1.5"

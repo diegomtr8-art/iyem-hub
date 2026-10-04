@@ -12,17 +12,13 @@ defineProps({
 </script>
 
 <template>
-    <div class="flex items-center gap-4 rounded-2xl border border-iyem-claro bg-white p-5 shadow-soft">
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-iyem-gradient text-white shadow-glow">
+    <div class="flex items-center gap-4 rounded-lg border border-line bg-surface p-5 shadow-sm">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface-brand text-action">
             <IconoNav :icono="icono" />
-        </div>
-        <div>
-            <p class="text-sm text-gray-500">
-                {{ etiqueta }}
-            </p>
-            <p class="mt-0.5 text-2xl font-bold text-gray-800">
-                {{ valor }}
-            </p>
+        </span>
+        <div class="min-w-0">
+            <p class="text-overline text-ink-600">{{ etiqueta }}</p>
+            <p class="mt-1 text-number-display text-ink">{{ valor }}</p>
         </div>
     </div>
 </template>

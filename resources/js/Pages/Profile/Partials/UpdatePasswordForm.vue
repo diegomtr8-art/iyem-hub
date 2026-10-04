@@ -2,9 +2,8 @@
 import { ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import ActionMessage from '@/Components/ActionMessage.vue';
+import Campo from '@/Components/Campo.vue';
 import FormSection from '@/Components/FormSection.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 
@@ -40,60 +39,66 @@ const updatePassword = () => {
 <template>
     <FormSection @submitted="updatePassword">
         <template #title>
-            Update Password
+            Contraseña
         </template>
 
         <template #description>
-            Ensure your account is using a long, random password to stay secure.
+            Usa una contraseña larga que no uses en ningún otro sistema.
         </template>
 
         <template #form>
             <div class="col-span-6 sm:col-span-4">
-                <InputLabel for="current_password" value="Current Password" />
-                <TextInput
-                    id="current_password"
-                    ref="currentPasswordInput"
-                    v-model="form.current_password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    autocomplete="current-password"
-                />
-                <InputError :message="form.errors.current_password" class="mt-2" />
+                <Campo id="current_password" v-slot="campo" etiqueta="Contraseña actual" :error="form.errors.current_password">
+                    <TextInput
+                        :id="campo.id"
+                        ref="currentPasswordInput"
+                        v-model="form.current_password"
+                        type="password"
+                        class="block w-full"
+                        :invalido="campo.invalido"
+                        :aria-describedby="campo.describedby"
+                        autocomplete="current-password"
+                    />
+                </Campo>
             </div>
 
             <div class="col-span-6 sm:col-span-4">
-                <InputLabel for="password" value="New Password" />
-                <TextInput
-                    id="password"
-                    ref="passwordInput"
-                    v-model="form.password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    autocomplete="new-password"
-                />
-                <InputError :message="form.errors.password" class="mt-2" />
+                <Campo id="password" v-slot="campo" etiqueta="Contraseña nueva" :error="form.errors.password">
+                    <TextInput
+                        :id="campo.id"
+                        ref="passwordInput"
+                        v-model="form.password"
+                        type="password"
+                        class="block w-full"
+                        :invalido="campo.invalido"
+                        :aria-describedby="campo.describedby"
+                        autocomplete="new-password"
+                    />
+                </Campo>
             </div>
 
             <div class="col-span-6 sm:col-span-4">
-                <InputLabel for="password_confirmation" value="Confirm Password" />
-                <TextInput
-                    id="password_confirmation"
-                    v-model="form.password_confirmation"
-                    type="password"
-                    class="mt-1 block w-full"
-                    autocomplete="new-password"
-                />
-                <InputError :message="form.errors.password_confirmation" class="mt-2" />
+                <Campo id="password_confirmation" v-slot="campo" etiqueta="Confirma la contraseña nueva" :error="form.errors.password_confirmation">
+                    <TextInput
+                        :id="campo.id"
+                        v-model="form.password_confirmation"
+                        type="password"
+                        class="block w-full"
+                        :invalido="campo.invalido"
+                        :aria-describedby="campo.describedby"
+                        autocomplete="new-password"
+                    />
+                </Campo>
             </div>
         </template>
 
         <template #actions>
-            <ActionMessage :on="form.recentlySuccessful" class="me-3">
-                Saved.
+            <ActionMessage :on="form.recentlySuccessful">
+                Contraseña actualizada.
             </ActionMessage>
 
-            <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                Save
+            <PrimaryButton :procesando="form.processing">
+                {{ form.processing ? 'Guardando…' : 'Cambiar contraseña' }}
             </PrimaryButton>
         </template>
     </FormSection>

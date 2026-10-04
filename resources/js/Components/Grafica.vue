@@ -14,6 +14,8 @@ import {
     PointElement,
     Tooltip,
 } from 'chart.js';
+import { coloresGrafica, seriesDatos } from '@/paletaDatos';
+import { observarTema } from '@/Composables/useTema';
 
 /*
  * Registro selectivo de Chart.js.
@@ -34,22 +36,21 @@ const props = defineProps({
     /** { tipo, etiquetas, series: [{ etiqueta, datos }] } */
     datos: { type: Object, default: null },
     alto: { type: String, default: 'h-64 sm:h-80' },
+    // Descripcion para lectores de pantalla: el canvas no tiene texto.
+    etiqueta: { type: String, default: 'Grafica de resultados' },
 });
 
 const lienzo = ref(null);
 let grafica = null;
+let dejarDeObservar = null;
 
-/**
- * Paleta institucional.
- *
- * El guinda encabeza y el dorado acompaña; el resto son variaciones de la
- * misma escala. Nada de arcoíris: en un tablero de gobierno, el color debe
- * distinguir series, no llamar la atención.
+/*
+ * Colores: salen de las variables CSS del tema (paletaDatos.js), porque
+ * Chart.js pinta en un canvas y no hereda CSS. Al cambiar de tema se vuelve
+ * a construir la grafica con los colores nuevos.
  */
-const PALETA = ['#691C32', '#BC955C', '#9F2241', '#C0728A', '#1F7A5C', '#B45309', '#4D1526'];
-
-Chart.defaults.font.family = 'Arial, Helvetica, sans-serif';
-Chart.defaults.color = '#6B7280';
+const FUENTE = 'Inter, ui-sans-serif, system-ui, sans-serif';
+const FUENTE_MONO = '"JetBrains Mono", ui-monospace, monospace';
 
 function construir() {
     destruir();
@@ -57,6 +58,8 @@ function construir() {
     if (!props.datos || !lienzo.value) return;
 
     const esCircular = props.datos.tipo === 'doughnut' || props.datos.tipo === 'pie';
+    const PALETA = seriesDatos();
+    const color = coloresGrafica();
 
     grafica = new Chart(lienzo.value, {
         type: props.datos.tipo || 'bar',
@@ -68,28 +71,33 @@ function construir() {
                 backgroundColor: esCircular
                     ? props.datos.etiquetas.map((_, j) => PALETA[j % PALETA.length])
                     : PALETA[i % PALETA.length],
-                borderColor: PALETA[i % PALETA.length],
+                // En las circulares el borde es el lienzo: separa las rebanadas.
+                borderColor: esCircular ? color.lienzo : PALETA[i % PALETA.length],
                 borderWidth: esCircular ? 2 : 0,
-                borderRadius: esCircular ? 0 : 6,
+                borderRadius: esCircular ? 0 : 4,
                 maxBarThickness: 44,
             })),
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            color: color.texto,
+            font: { family: FUENTE },
             plugins: {
                 // Con una sola serie la leyenda solo repite el título.
                 legend: {
                     display: esCircular || props.datos.series.length > 1,
                     position: esCircular ? 'right' : 'top',
-                    labels: { usePointStyle: true, boxWidth: 8, padding: 16 },
+                    labels: { usePointStyle: true, boxWidth: 8, padding: 16, color: color.texto, font: { family: FUENTE } },
                 },
                 tooltip: {
-                    backgroundColor: '#271217',
+                    backgroundColor: color.tooltipFondo,
+                    titleColor: color.tooltipTexto,
+                    bodyColor: color.tooltipTexto,
                     padding: 10,
                     cornerRadius: 8,
-                    titleFont: { family: 'Arial' },
-                    bodyFont: { family: 'Arial' },
+                    titleFont: { family: FUENTE },
+                    bodyFont: { family: FUENTE_MONO },
                     callbacks: {
                         label: (contexto) => {
                             const valor = contexto.parsed.y ?? contexto.parsed;
@@ -102,13 +110,13 @@ function construir() {
             scales: esCircular ? {} : {
                 x: {
                     grid: { display: false },
-                    ticks: { autoSkip: false, maxRotation: 60, minRotation: 0 },
+                    ticks: { autoSkip: false, maxRotation: 60, minRotation: 0, color: color.texto, font: { family: FUENTE } },
                 },
                 y: {
                     beginAtZero: true,
-                    grid: { color: '#F1F1F3' },
+                    grid: { color: color.rejilla },
                     border: { display: false },
-                    ticks: { precision: 0, callback: (v) => Number(v).toLocaleString('es-MX') },
+                    ticks: { precision: 0, color: color.texto, font: { family: FUENTE_MONO }, callback: (v) => Number(v).toLocaleString('es-MX') },
                 },
             },
         },
@@ -120,15 +128,21 @@ function destruir() {
     grafica = null;
 }
 
-onMounted(construir);
-onUnmounted(destruir);
+onMounted(() => {
+    construir();
+    dejarDeObservar = observarTema(construir);
+});
+onUnmounted(() => {
+    dejarDeObservar?.();
+    destruir();
+});
 watch(() => props.datos, construir, { deep: true });
 </script>
 
 <template>
-    <div v-if="datos" class="rounded-2xl border border-iyem-200 bg-white p-4 shadow-soft sm:p-5">
+    <div v-if="datos" class="rounded-lg border border-line bg-surface p-4 shadow-sm sm:p-5">
         <div class="relative" :class="alto">
-            <canvas ref="lienzo" />
+            <canvas ref="lienzo" role="img" :aria-label="etiqueta" />
         </div>
     </div>
 </template>

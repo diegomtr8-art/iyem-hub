@@ -1,63 +1,82 @@
 <script setup>
-import iconoIyem from '../../images/iyem-icono.png';
+import { Link } from '@inertiajs/vue3';
+import InterruptorTema from '@/Components/InterruptorTema.vue';
+import MarcaErp from '@/Components/MarcaErp.vue';
 
-const modulos = ['CREA', 'Impúlsate', 'Nodico', 'Herencia Viva', 'Jurídico', 'Padrón'];
+/**
+ * Marco de las seis pantallas de autenticación.
+ *
+ * Escritorio: panel de identidad brand-900 a la izquierda, formulario sobre
+ * el lienzo a la derecha. Móvil: el panel se reduce a un encabezado corto y
+ * el formulario ocupa el resto.
+ *
+ * El panel lleva data-theme="dark" para que, sobre brand-900, rijan los
+ * tokens del tema oscuro en los dos temas (texto claro, foco índigo claro).
+ *
+ * El slot `logo` se conserva por compatibilidad con Jetstream, pero ya no se
+ * pinta: la marca vive en el panel.
+ */
+defineProps({
+    titulo: {
+        type: String,
+        default: null,
+    },
+    descripcion: {
+        type: String,
+        default: null,
+    },
+});
+
+const anio = new Date().getFullYear();
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-white">
-        <!-- Panel de marca -->
-        <div class="relative hidden w-[46%] max-w-2xl flex-col justify-between overflow-hidden bg-tinta-gradient p-12 text-white lg:flex">
-            <div
-                class="pointer-events-none absolute inset-0 opacity-[0.07]"
-                :style="{ backgroundImage: `url(${iconoIyem})`, backgroundSize: '130px', backgroundRepeat: 'repeat' }"
-            />
-            <div class="pointer-events-none absolute inset-0 bg-iyem-mesh" />
-            <div class="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-iyem-secundario/30 blur-3xl" />
-            <div class="pointer-events-none absolute -bottom-40 -left-20 h-96 w-96 rounded-full bg-iyem-700/40 blur-3xl" />
-
-            <div class="relative flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-white/60">
-                <span class="h-1.5 w-1.5 rounded-full bg-iyem-400" />
-                Plataforma Centralizada
+    <div class="flex min-h-screen flex-col bg-surface lg:flex-row">
+        <!-- Panel de identidad -->
+        <aside
+            data-theme="dark"
+            class="pad-seguro-arriba pad-seguro-lados flex shrink-0 flex-col bg-brand-900 text-ink lg:w-[42%] lg:max-w-xl"
+        >
+            <div class="flex h-14 items-center justify-between gap-4 px-4 sm:px-6 lg:h-auto lg:px-12 lg:pt-12">
+                <Link
+                    :href="route('inicio')"
+                    class="rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-brand-900"
+                    aria-label="IYEM ERP, volver a la pantalla de inicio"
+                >
+                    <MarcaErp tamano="sm" sobre-oscuro class="lg:hidden" />
+                    <MarcaErp tamano="md" sobre-oscuro class="hidden lg:inline-flex" />
+                </Link>
+                <InterruptorTema />
             </div>
 
-            <div class="relative">
-                <h1 class="max-w-md text-4xl font-bold leading-tight">
-                    Un solo acceso para todo el ecosistema IYEM
-                </h1>
-                <p class="mt-5 max-w-sm text-white/60">
-                    Gestiona créditos, citas, coworking, comercio y trámites jurídicos desde una misma plataforma.
+            <div class="hidden flex-1 flex-col justify-center px-12 lg:flex">
+                <p class="text-display-lg text-ink">Plataforma de gestión del Instituto</p>
+                <p class="mt-4 max-w-sm text-body text-ink-600">
+                    Padrón, consultas y los módulos del ecosistema IYEM en un mismo acceso.
                 </p>
-
-                <div class="mt-8 flex flex-wrap gap-2">
-                    <span
-                        v-for="modulo in modulos"
-                        :key="modulo"
-                        class="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-white/80 backdrop-blur-sm"
-                    >
-                        {{ modulo }}
-                    </span>
-                </div>
             </div>
 
-            <p class="relative text-xs text-white/35">
-                &copy; {{ new Date().getFullYear() }} Instituto Yucateco de Emprendedores (IYEM). Todos los derechos reservados.
+            <p class="hidden px-12 pb-12 text-caption text-ink-600 lg:block">
+                © <span class="font-mono">{{ anio }}</span> Instituto Yucateco de Emprendedores
             </p>
-        </div>
+        </aside>
 
-        <!-- Panel de formulario -->
-        <div class="patron-puntos relative flex flex-1 flex-col items-center justify-center px-6 py-12 text-iyem-100 sm:px-12">
-            <div class="w-full max-w-sm">
-                <div class="mb-10">
-                    <slot name="logo" />
+        <!-- Formulario -->
+        <!-- El área segura va en el contenedor y el gutter en el hijo: las dos
+             reglas escriben padding lateral y en el mismo elemento se pisan. -->
+        <main class="pad-seguro-abajo pad-seguro-lados flex flex-1 flex-col">
+            <div class="mx-auto flex w-full max-w-sm flex-1 flex-col px-4 py-10 sm:px-0 lg:justify-center lg:py-16">
+                <h1 v-if="titulo" class="text-display-md text-ink">{{ titulo }}</h1>
+                <p v-if="descripcion" class="mt-2 text-body text-ink-600">{{ descripcion }}</p>
+
+                <div :class="{ 'mt-8': titulo || descripcion }">
+                    <slot />
                 </div>
 
-                <slot />
-
-                <p class="mt-10 text-center text-xs text-gray-400 lg:hidden">
-                    &copy; {{ new Date().getFullYear() }} Instituto Yucateco de Emprendedores (IYEM).
+                <p class="mt-10 text-small text-ink-600">
+                    Las cuentas las crea el administrador de la plataforma.
                 </p>
             </div>
-        </div>
+        </main>
     </div>
 </template>

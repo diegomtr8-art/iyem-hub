@@ -8,11 +8,30 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PadronController;
 use App\Http\Controllers\PadronDuplicadosController;
 use App\Http\Controllers\PadronImportacionController;
+use App\Services\CatalogoModulos;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+/*
+ * Pantalla de inicio: la puerta privada del ERP para el personal del
+ * Instituto. Quien ya inició sesión va directo al tablero.
+ *
+ * Los módulos se exponen como vitrina: sin `url`, `api_salud`,
+ * `responsable` ni conteos. Antes de entrar nadie tiene por qué saber a qué
+ * dominio apunta cada sistema ni cuántas personas hay en el padrón.
+ */
+Route::get('/', function (CatalogoModulos $catalogo) {
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+
+    return Inertia::render('Inicio', [
+        'modulos' => $catalogo->todos()
+            ->map(fn (array $modulo) => Arr::only($modulo, ['slug', 'nombre', 'descripcion', 'icono', 'estado', 'categoria']))
+            ->values(),
+    ]);
+})->name('inicio');
 
 Route::middleware([
     'auth:sanctum',

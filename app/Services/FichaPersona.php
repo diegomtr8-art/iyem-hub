@@ -136,7 +136,7 @@ class FichaPersona
                 'fecha' => $evento['fecha']->toIso8601String(),
                 'modulo_nombre' => $this->catalogo->encontrar($evento['modulo'])['nombre'] ?? $evento['modulo'],
                 'modulo_icono' => $this->catalogo->encontrar($evento['modulo'])['icono'] ?? 'squares-2x2',
-                'modulo_color' => $this->catalogo->encontrar($evento['modulo'])['color'] ?? 'iyem-primario',
+                'modulo_color' => $this->catalogo->encontrar($evento['modulo'])['color'] ?? 'brand-500',
             ])
             ->sortByDesc('fecha')
             ->values();
@@ -175,7 +175,7 @@ class FichaPersona
                     'slug' => $slug,
                     'nombre' => $modulo['nombre'] ?? $slug,
                     'icono' => $modulo['icono'] ?? 'squares-2x2',
-                    'color' => $modulo['color'] ?? 'iyem-primario',
+                    'color' => $modulo['color'] ?? 'brand-500',
                     'total' => $total,
                     'descripcion' => $descripciones[$slug]($total),
                     /*
